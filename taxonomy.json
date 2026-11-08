@@ -1,0 +1,118 @@
+{
+  "ppe": {
+    "query": "helmet hardhat vest gloves boots eye hearing mask respirator harness",
+    "severity": "High",
+    "action": "Confirm the task and exposure, then verify suitable PPE and fit."
+  },
+  "height": {
+    "query": "fall edge guardrail ladder roof opening safety net platform",
+    "severity": "High",
+    "action": "Restrict access and verify fall protection and safe access."
+  },
+  "excavation": {
+    "query": "trench depth spoil edge shoring barricade access water collapse",
+    "severity": "High",
+    "action": "Restrict access and measure depth, spoil clearance and protective systems."
+  },
+  "scaffold": {
+    "query": "scaffolding formwork braces toe board overload temporary support",
+    "severity": "High",
+    "action": "Isolate suspect scaffolding or formwork pending inspection and load verification."
+  },
+  "electrical": {
+    "query": "exposed cables wiring water generator earthing protection",
+    "severity": "High",
+    "action": "Isolate the affected area and have a qualified person verify electrical protection."
+  },
+  "machinery": {
+    "query": "crane lifting suspended load vehicle machinery pedestrian guard",
+    "severity": "High",
+    "action": "Verify separation, guarding, lifting arrangements and operating controls."
+  },
+  "fire": {
+    "query": "fire extinguisher exits emergency signage welding flammable hot work",
+    "severity": "High",
+    "action": "Check exit routes, hot-work controls and firefighting equipment."
+  },
+  "housekeeping": {
+    "query": "materials stacking slippery scattered debris blocked route openings",
+    "severity": "Moderate",
+    "action": "Clear access routes and verify safe storage and opening protection."
+  },
+  "confined": {
+    "query": "confined entry ventilation oxygen toxic gas permit rescue",
+    "severity": "High",
+    "action": "Verify entry controls, atmospheric testing and rescue readiness."
+  },
+  "operations": {
+    "query": "language migrant communication monsoon heat dust congested traffic temporary site",
+    "severity": "Moderate",
+    "action": "Confirm workforce communication and assess weather, exposure and traffic controls."
+  },
+  "trenching": {
+    "query": "trench shoring ladder spoil collapse",
+    "severity": "High",
+    "action": "Restrict access and measure depth, spoil clearance and protective systems.",
+    "required_evidence": "Depth and protection measurements"
+  },
+  "formwork": {
+    "query": "formwork shores temporary support bracing stripping",
+    "severity": "High",
+    "action": "Isolate suspect scaffolding or formwork pending inspection and load verification.",
+    "required_evidence": "Design and inspection records"
+  },
+  "lifting": {
+    "query": "crane rigging suspended load slings hoist",
+    "severity": "High",
+    "action": "Verify separation, guarding, lifting arrangements and operating controls.",
+    "required_evidence": "Lift plan, rated load and exclusion zone"
+  },
+  "storage": {
+    "query": "material storage stacking segregation access",
+    "severity": "Moderate",
+    "action": "Clear access routes and verify safe storage and opening protection.",
+    "required_evidence": "Stack condition and load data"
+  },
+  "emergency": {
+    "query": "emergency access exits evacuation firefighting",
+    "severity": "High",
+    "action": "Check exit routes, hot-work controls and firefighting equipment.",
+    "required_evidence": "Site plan and equipment inspection"
+  },
+  "dust": {
+    "query": "dust respiratory exposure ventilation fumes",
+    "severity": "Moderate",
+    "action": "Confirm workforce communication and assess weather, exposure and traffic controls.",
+    "required_evidence": "Exposure measurements and respiratory control records"
+  },
+  "heat": {
+    "query": "heat stress temperature workload rest hydration",
+    "severity": "Moderate",
+    "action": "Confirm workforce communication and assess weather, exposure and traffic controls.",
+    "required_evidence": "Exposure and work-rest records"
+  },
+  "monsoon": {
+    "query": "monsoon rain drainage water flooding slippery",
+    "severity": "Moderate",
+    "action": "Confirm workforce communication and assess weather, exposure and traffic controls.",
+    "required_evidence": "Weather, drainage and electrical isolation review"
+  },
+  "access": {
+    "query": "worker access movement walkway stairs barriers",
+    "severity": "High",
+    "action": "Restrict access and verify fall protection and safe access.",
+    "required_evidence": "Site access and egress route review"
+  },
+  "signage": {
+    "query": "signage language communication warning training",
+    "severity": "Moderate",
+    "action": "Confirm workforce communication and assess weather, exposure and traffic controls.",
+    "required_evidence": "Sign text and workforce language needs"
+  },
+  "demolition": {
+    "query": "demolition debris stability sequence temporary support",
+    "severity": "High",
+    "action": "Isolate suspect scaffolding or formwork pending inspection and load verification.",
+    "required_evidence": "Demolition plan and structural review"
+  }
+}

@@ -1,0 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.0+cpu ; sys_platform == "linux" and platform_machine == "x86_64"
+torchvision==0.29.1+cpu ; sys_platform == "linux" and platform_machine == "x86_64"
+streamlit==1.67.0
+ultralytics==8.4.204
+opencv-python==4.14.0.94
+reportlab==4.5.1
+pypdf==6.21.4
+openai==2.54.0
+huggingface-hub==1.33.0

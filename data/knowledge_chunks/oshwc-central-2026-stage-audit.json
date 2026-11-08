@@ -1,0 +1,25 @@
+{
+  "document_id": "OSH-CENTRAL-RULES-2026",
+  "document_name": "Occupational Safety, Health and Working Conditions (Central) Rules, 2026",
+  "gazette_reference": "G.S.R. 345(E), 8 May 2026",
+  "source_url": "https://www.labour.gov.in/static/uploads/2026/05/ee246f790cad0b8e99c3828f34fa09a6.pdf",
+  "local_pdf": "data/indian_regulations/oshwc-central-2026-gsr-345e.pdf",
+  "pdf_bytes": 2976282,
+  "sha256": "e70b1398caedc1f28f0e135bbed9fd942d5435669eeffdef04ef2050b3665fae",
+  "extraction_date": "2026-11-08",
+  "extractor": "ingest.py / pypdf text extraction; no OCR used",
+  "staged_output": "data/knowledge_chunks/oshwc-central-2026-staged.json",
+  "candidate_count": 608,
+  "source_pdf_page_span": [
+    139,
+    318
+  ],
+  "quality_flag_counts": {
+    "chapter_unresolved": 17,
+    "repeated_reference_review": 471,
+    "long_provision_review": 81
+  },
+  "all_candidates_provisional": true,
+  "active_corpus_count": 31,
+  "review_note": "The heading detector captures repeated rule numbering and numbered form fields in the Gazette annexures. Candidates have no hazard tags or applicability review. Do not promote the staged file wholesale. The two focused Rule 46 and Rule 59 mappings were independently reviewed and are already represented in the active corpus."
+}

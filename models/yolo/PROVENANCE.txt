@@ -1,0 +1,6 @@
+Upstream checkpoint
+Repository https://huggingface.co/yihong1120/Construction-Hazard-Detection
+Artifact models/yolo26/pt/yolo26n.pt
+SHA256 80C463DAF7CF151F20E92231276162607BC4611C013CFB6E052B89442B764B1D
+Project source https://github.com/yihong1120/Construction-Hazard-Detection
+Inspected source revision 61d9fb971d6d73e82fcb0aca4d3a8227f11c5013

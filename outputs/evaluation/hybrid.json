@@ -1,0 +1,10 @@
+{
+  "queries": 8,
+  "k": 3,
+  "mode": "hybrid",
+  "recall": 1.0,
+  "precision": 0.3333333333333333,
+  "mrr": 1.0,
+  "ndcg": 1.0,
+  "latency_ms": 113.43613750068471
+}

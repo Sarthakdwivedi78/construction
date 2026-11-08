@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.venv/
+__pycache__/
+*.sqlite3*
+*.zip
+*.pt
+!models/yolo/yolo26n.pt
+reports/
+logs/
+data/raw/

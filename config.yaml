@@ -1,0 +1,14 @@
+# Reference settings for reproducibility. Runtime options are exposed by the UI and CLI.
+jurisdiction: West Bengal
+appropriate_government: Unknown
+detector:
+  weights: models/yolo/yolo26n.pt
+  confidence: 0.25
+  image_size: 640
+retrieval:
+  embedding_model: BAAI/bge-small-en-v1.5
+  dense_weight: 0.5
+  top_k: 4
+video:
+  interval_seconds: 2
+  frame_limit: 12

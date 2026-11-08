@@ -1,0 +1,21 @@
+[
+  {
+    "document_id": "OSH-CENTRAL-RULES-2026",
+    "document_name": "Occupational Safety, Health and Working Conditions (Central) Rules, 2026",
+    "issuing_authority": "Ministry of Labour and Employment, Government of India",
+    "gazette_reference": "G.S.R. 345(E), Gazette of India, Extraordinary, Part II, Section 3(i), 8 May 2026",
+    "jurisdiction": "Central Government establishments where Central Government is the appropriate government under the Code",
+    "published_date": "2026-05-08",
+    "effective_from": "2026-05-08",
+    "legal_status": "Final Central Rules; supersedes listed Central instruments including BOCW (Central) Rules, 1998, except prior acts or omissions as stated in notification",
+    "source_url": "https://www.labour.gov.in/static/uploads/2026/05/ee246f790cad0b8e99c3828f34fa09a6.pdf",
+    "verification_date": "2026-11-08",
+    "verification_status": "Official Ministry-hosted Gazette PDF; construction Rules 30-32, Rule 46 construction lighting provisions, and Rule 59 quarterly mock drills reviewed.",
+    "scope_note": "Does not establish applicability to a State-government establishment. Confirm appropriate government and establishment coverage before using for a legal finding.",
+    "local_copy": "data/indian_regulations/oshwc-central-2026-gsr-345e.pdf",
+    "sha256": "e70b1398caedc1f28f0e135bbed9fd942d5435669eeffdef04ef2050b3665fae",
+    "staged_extraction": "data/knowledge_chunks/oshwc-central-2026-staged.json",
+    "staged_candidate_count": 608,
+    "extraction_review_status": "provisional; heading and legal applicability review required"
+  }
+]
