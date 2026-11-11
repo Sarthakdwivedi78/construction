@@ -10,7 +10,7 @@ import cv2
 import streamlit as st
 from detection import INDIAN_PPE_LABELS, detect, frames, load_detector
 from measurements import parse_measurements
-from reasoning import Vision, inspect, report
+from reasoning import Vision, explain_finding, inspect, report
 from reporting import pdf
 from retrieval import Index, ROOT
 
@@ -24,24 +24,7 @@ def indian_ppe_checkpoint():
     return candidates[-1] if candidates else None
 
 def assessment_detail(item):
-    model_assessment = item.get("model_assessment")
-    if isinstance(model_assessment, dict) and isinstance(model_assessment.get("reasoning"), str):
-        return f'Vision model suggestion (unreviewed): {model_assessment["reasoning"]}'
-    explanation = item.get("assessment_explanation") or item.get("reasoning", "")
-    old_generic = explanation.startswith(("Confirm the observation, task, applicable provision",
-                                          "The image shows a possible risk cue, but does not by itself"))
-    if explanation and not old_generic:
-        return explanation
-    parts = []
-    if item.get("retrieved_evidence"):
-        parts.append("Knowledge-base condition: " + item["retrieved_evidence"])
-    if item.get("additional_evidence_needed"):
-        parts.append("Evidence to check: " + item["additional_evidence_needed"])
-    if item.get("applicability_conditions"):
-        parts.append("Applicability to confirm: " + item["applicability_conditions"])
-    if parts:
-        return " · ".join(parts)
-    return "Check the task, worker exposure, controls and applicable provision at the site."
+    return explain_finding(item)
 
 def assessment_label(item):
     if item.get("assessment_display_status"):
