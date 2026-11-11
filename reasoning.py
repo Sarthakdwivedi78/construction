@@ -37,11 +37,11 @@ def _knowledge_assessment(cue, source, category_data, metadata, frame_sha):
     if condition:
         variants = [
             f'For {metadata.get("activity") or "this task"}, the knowledge base matched {regulation}{ref}: {condition}. '
-            f'On-site checks needed: {evidence} Applicability to confirm: {applicability}',
+            f'On-site checks needed: {evidence}. Applicability to confirm: {applicability}.',
             f'The frame suggests {cue["hazard"]}. {regulation}{ref} covers: {condition}. '
-            f'Check {evidence} at the site. Confirm that the provision applies: {applicability}',
+            f'Check {evidence} at the site. Confirm that the provision applies: {applicability}.',
             f'Screening note for {cue["hazard"]}: the retrieved provision {regulation}{ref} states: {condition}. '
-            f'To assess this finding, inspect {evidence}. Applicability to check: {applicability}',
+            f'To assess this finding, inspect {evidence}. Applicability to check: {applicability}.',
         ]
         seed = f'{frame_sha or cue.get("evidence_box")}|{source.get("hazard_id", "")}|{cue["hazard"]}'
         variant = int(hashlib.sha256(seed.encode("utf-8")).hexdigest()[:8], 16) % len(variants)
