@@ -69,7 +69,7 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
         sources = index.search(query, category, metadata.get("authority", "Unknown"), state=metadata.get("state", ""),
                                inspection_date=metadata.get("inspection_date", "")) if index else []
         decision = "Insufficient Evidence"
-        rationale = "Confirm the observation, task, applicable provision and required evidence."
+        rationale = "The image shows a possible risk cue, but does not by itself confirm worker exposure, the controls in place, measurements, or which legal provision applies. Verify these on site."
         suggested = None
         if vision:
             try:
@@ -120,6 +120,7 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
                          "source_verification_status": chosen.get("verification_status", ""),
                          "retrieved_evidence": chosen.get("required_safety_condition", ""),
                          "retrieved_sources": sources, "query": query, "violation_status": decision,
+                         "assessment_display_status": "Needs site verification" if decision == "Insufficient Evidence" else decision,
                          "reasoning": rationale, "model_assessment": suggested,
                          "frame_sha256": frame_sha, "selected_provision_id": chosen.get("hazard_id"),
                          "decision_code": decision.upper().replace(" ", "_"),

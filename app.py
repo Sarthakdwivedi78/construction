@@ -367,7 +367,8 @@ if "result" in st.session_state:
             if cue_score is not None:
                 st.caption(f'YOLO visual cue confidence: {cue_score:.1f}% (not an accident probability).')
             st.markdown(f'**What the model saw:** {item["visual_evidence"]}')
-            st.markdown(f'**Assessment:** {item["violation_status"]} — {item["reasoning"]}')
+            st.markdown(f'**Assessment:** {item.get("assessment_display_status", item["violation_status"])}')
+            st.caption(f'Why: {item["reasoning"]}')
             st.markdown(f'**Immediate action:** {item["corrective_action"]}')
             preventive = item.get("preventive_measures", [])
             if preventive:

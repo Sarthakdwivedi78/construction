@@ -29,7 +29,7 @@ def pdf(report):
         heading = f'{i}. {hazard["hazard"]}'
         start = len(story)
         add(heading, "Heading2")
-        add(f'{hazard["timestamp_seconds"]:.2f} s | Risk type: {hazard.get("risk_type", "Site safety")} | {hazard["severity"]} priority | {hazard["violation_status"]}')
+        add(f'{hazard["timestamp_seconds"]:.2f} s | Risk type: {hazard.get("risk_type", "Site safety")} | {hazard["severity"]} priority | {hazard.get("assessment_display_status", hazard["violation_status"])}')
         if hazard.get("potential_harm"):
             add("Potential harm: " + hazard["potential_harm"])
         add("Observation: " + hazard["visual_evidence"])
