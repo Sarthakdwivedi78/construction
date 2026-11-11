@@ -107,6 +107,10 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
             decision, rationale = check["status"], check["evidence"]
         findings.append({**{k:v for k,v in cue.items() if k != "query"},
                          "confidence": cue.get("confidence"), "severity": taxonomy[category]["severity"],
+                         "risk_type": category,
+                         "visual_risk_estimate_percent": round(float(cue["confidence"]) * 100, 1)
+                         if isinstance(cue.get("confidence"), (int, float)) else None,
+                         "risk_probability_calibrated": False,
                          "indian_regulation": chosen.get("indian_regulation", ""),
                          "provision_reference": chosen.get("provision_number", ""),
                          "source_url": chosen.get("source_url", ""),
@@ -118,7 +122,8 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
                          "frame_sha256": frame_sha, "selected_provision_id": chosen.get("hazard_id"),
                          "decision_code": decision.upper().replace(" ", "_"),
                          "additional_evidence_needed": taxonomy[category].get("required_evidence", ""),
-                         "corrective_action": taxonomy[category]["action"]})
+                         "corrective_action": taxonomy[category]["action"],
+                         "preventive_measures": taxonomy[category].get("preventive_measures", [])})
     return findings, errors
 
 def _overlap(left, right):
@@ -157,10 +162,15 @@ def summarize_hazards(frame_records):
 def report(metadata, frame_records, elapsed):
     hazards = summarize_hazards(frame_records)
     critical = [h["hazard"] for h in hazards if h["severity"] == "High"]
+    estimates = [h["visual_risk_estimate_percent"] for h in hazards
+                 if isinstance(h.get("visual_risk_estimate_percent"), (int, float))]
     return {"inspection_id": str(uuid4()), "site_type": metadata.get("site_type", "Unspecified"),
             "site_context": {k:v for k,v in metadata.items() if k != "reviewed_checks"},
             "overall_risk_level": "High screening priority" if critical else
                                   "Review required" if hazards else "Undetermined",
+            "visual_risk_estimate_percent": max(estimates) if estimates else None,
+            "risk_probability_calibrated": False,
+            "risk_probability_note": "The percentage is an uncalibrated model score for a visible cue, not the probability of an accident or proof of legal non-compliance.",
             "detected_objects": [dict(o, timestamp_seconds=f["timestamp_seconds"])
                                  for f in frame_records for o in f["objects"]],
             "identified_hazards": hazards, "critical_safety_observations": sorted(set(critical)),

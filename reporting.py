@@ -17,6 +17,9 @@ def pdf(report):
     add("Inspection " + report["inspection_id"])
     add(report["site_type"] + " | " + report["overall_risk_level"])
     add(f'{report["frames_processed"]} frame(s) reviewed. Human review required.')
+    estimate = report.get("visual_risk_estimate_percent")
+    add("Highest visual risk-cue score: " + (f"{estimate:.1f}%" if estimate is not None else "not available"))
+    add(report.get("risk_probability_note", "Detector scores are not calibrated incident probabilities."))
     for warning in report["warnings"]:
         add(warning)
     add("Hazard Findings", "Heading1")
@@ -34,6 +37,8 @@ def pdf(report):
             add(hazard["retrieved_evidence"])
             add(hazard["source_url"])
         add("Action: " + hazard["corrective_action"])
+        for measure in hazard.get("preventive_measures", []):
+            add("Preventive measure: " + measure)
         story[start:] = [KeepTogether(story[start:])]
     def footer(canvas, doc):
         canvas.setFillColor(colors.HexColor("#526476"))

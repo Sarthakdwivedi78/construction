@@ -61,7 +61,7 @@ model_choice = st.sidebar.selectbox("Detection model", model_options,
 if page == "Home":
     st.subheader("Current Indian safety framework")
     st.write("The Occupational Safety, Health and Working Conditions Code, 2020 came into force on 21 November 2025. The Occupational Safety, Health and Working Conditions (Central) Rules, 2026 were published on 8 May 2026 and supersede the BOCW Central Rules, 1998. State-specific notifications and site applicability still need review.")
-    st.markdown("[OSHWC Code, 2020 — India Code](https://www.indiacode.nic.in/bitstream/123456789/22041/1/a2020-37.pdf) · [OSHWC (Central) Rules, 2026 — Ministry of Labour and Employment](https://www.labour.gov.in/static/uploads/2026/05/ee246f790cad0b8e99c3828f34fa09a6.pdf) · [Commencement notification — Gazette of India](https://egazette.gov.in/WriteReadData/2025/267884.pdf)")
+    st.markdown("[Ministry of Labour: Labour Codes, current Central Rules and notices](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa) · [PIB: Labour Codes effective from 21 November 2025](https://www.pib.gov.in/newsite/erelcontent.aspx?lang=2&reg=48&relid=279088)")
     st.warning("This app screens visual cues; it cannot determine legal compliance or certify that a site is safe. Confirm the site, activity, appropriate government and applicable State requirements with a qualified safety professional.")
     st.subheader("Indian PPE model")
     if indian_weights:
@@ -78,6 +78,7 @@ if page == "Home":
         st.caption(f"Checkpoint: {indian_weights}")
     else:
         st.info("No local Indian PPE checkpoint is configured. The app is using the original baseline. Set INDIAN_PPE_WEIGHTS to the trained checkpoint to enable the Indian fine-tune.")
+    st.caption("The PIB announcement confirms the Code’s effective date. The Ministry page lists the Code and 2026 Central Rules. These official HTML pages avoid relying on the direct PDF links that were failing.")
     st.write("Choose Image Inspection, Video Inspection or Live Inspection to screen site media. Use the sidebar to select the site state and work context before retrieval.")
     st.stop()
 if page == "Training Dashboard":
@@ -330,15 +331,32 @@ if "result" in st.session_state:
     for result_index, (output, previews, media_name) in enumerate(results):
         st.markdown(f"#### {media_name}")
         st.subheader(output["overall_risk_level"])
+        estimate = output.get("visual_risk_estimate_percent")
+        st.metric("Highest visual risk-cue score", f"{estimate:.1f}%" if estimate is not None else "Not available")
+        st.caption("This is an uncalibrated detector score for a visible cue, not the probability of an accident or a legal compliance decision. Confirm findings on site.")
         for timestamp, preview in previews:
             with st.expander(f"Detections at {timestamp:.2f} s"):
                 st.image(preview)
         for item in output["identified_hazards"]:
-            with st.expander(item["hazard"] + " | " + item["violation_status"]):
-                st.write(item["visual_evidence"], item["reasoning"], item["corrective_action"])
+            with st.expander(f'{item.get("risk_type", "Risk").title()}: {item["hazard"]} | {item["severity"]} priority'):
+                cue_score = item.get("visual_risk_estimate_percent")
+                st.metric("Visual cue score", f"{cue_score:.1f}%" if cue_score is not None else "Not available")
+                st.caption("Uncalibrated model score; it is not an incident probability. Human confirmation is required.")
+                st.markdown(f'**Observation:** {item["visual_evidence"]}')
+                st.markdown(f'**Assessment:** {item["violation_status"]} — {item["reasoning"]}')
+                st.markdown(f'**Immediate corrective action:** {item["corrective_action"]}')
+                preventive = item.get("preventive_measures", [])
+                if preventive:
+                    st.markdown("**Preventive measures**")
+                    for measure in preventive:
+                        st.markdown(f"- {measure}")
                 for source in item["retrieved_sources"]:
-                    st.write(source["indian_regulation"], source["provision_number"],
-                             source["verification_status"], source["source_url"])
+                    st.markdown(f'**Source:** {source["indian_regulation"]} · {source["provision_number"]} · {source["verification_status"]}')
+                    if source.get("verification_status") == "historical":
+                        st.markdown("[Open the Ministry’s current Labour Codes page](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa)")
+                    else:
+                        st.markdown("[Open the Ministry’s Labour Codes page and source documents](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa)")
+                    st.caption(source.get("required_safety_condition", ""))
                 if item["model_assessment"]:
                     st.caption("Unreviewed vision model assessment")
                     st.json(item["model_assessment"])
