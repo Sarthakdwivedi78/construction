@@ -107,10 +107,12 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
             decision, rationale = check["status"], check["evidence"]
         findings.append({**{k:v for k,v in cue.items() if k != "query"},
                          "confidence": cue.get("confidence"), "severity": taxonomy[category]["severity"],
+                         "danger_status": "Potential danger — high priority" if taxonomy[category]["severity"] == "High" else "Potential hazard — moderate priority",
                          "risk_type": category,
                          "visual_risk_estimate_percent": round(float(cue["confidence"]) * 100, 1)
                          if isinstance(cue.get("confidence"), (int, float)) else None,
                          "risk_probability_calibrated": False,
+                         "potential_harm": taxonomy[category].get("potential_harm", "The possible consequence depends on the work activity and exposure; confirm on site."),
                          "indian_regulation": chosen.get("indian_regulation", ""),
                          "provision_reference": chosen.get("provision_number", ""),
                          "source_url": chosen.get("source_url", ""),

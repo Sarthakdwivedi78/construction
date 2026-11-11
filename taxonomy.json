@@ -7,7 +7,8 @@
       "Complete a task-based PPE assessment before each activity.",
       "Provide suitable, correctly sized PPE and replace damaged items.",
       "Train workers in fit, use, care and limitations; include supervisor checks."
-    ]
+    ],
+    "potential_harm": "Injury may be more severe if workers are exposed to task hazards without suitable protective equipment; the specific exposure needs on-site confirmation."
   },
   "height": {
     "query": "fall edge guardrail ladder roof opening safety net platform",
@@ -17,7 +18,8 @@
       "Use guardrails or secured covers at edges and floor openings.",
       "Inspect access equipment and fall-protection systems before use.",
       "Plan anchorage, rescue arrangements and supervision for work at height."
-    ]
+    ],
+    "potential_harm": "A fall from height can cause severe injury or death."
   },
   "excavation": {
     "query": "trench depth spoil edge shoring barricade access water collapse",
@@ -27,7 +29,8 @@
       "Locate underground services and assess soil and water conditions before digging.",
       "Use designed shoring, shielding or safe battering where required.",
       "Keep spoil and plant away from edges, provide safe access, and reinspect after rain or ground changes."
-    ]
+    ],
+    "potential_harm": "A trench collapse, fall or contact with buried services can cause fatal injury."
   },
   "scaffold": {
     "query": "scaffolding formwork braces toe board overload temporary support",
@@ -37,7 +40,8 @@
       "Use approved design and competent erection, alteration and dismantling.",
       "Inspect ties, bracing, platforms, guardrails and foundations before use and after changes.",
       "Display inspection status and prevent overloading."
-    ]
+    ],
+    "potential_harm": "A fall or scaffold/formwork collapse can cause severe injury or death."
   },
   "electrical": {
     "query": "exposed cables wiring water generator earthing protection",
@@ -47,7 +51,8 @@
       "Use lockout and tagout for electrical work.",
       "Inspect cables, earthing and protective devices; use suitable residual-current protection.",
       "Route and protect temporary wiring from water, traffic and mechanical damage."
-    ]
+    ],
+    "potential_harm": "Electric shock, burns or electrical fire can cause severe injury or death."
   },
   "machinery": {
     "query": "crane lifting suspended load vehicle machinery pedestrian guard",
@@ -57,7 +62,8 @@
       "Separate pedestrian routes from vehicle and lifting zones.",
       "Use inspected lifting gear, a lift plan and competent operators and signalers.",
       "Keep machine guards and emergency stops in place and inspect before use."
-    ]
+    ],
+    "potential_harm": "Crushing, entanglement or a struck-by event can cause severe injury."
   },
   "fire": {
     "query": "fire extinguisher exits emergency signage welding flammable hot work",
@@ -67,7 +73,8 @@
       "Use hot-work permits, clear combustibles and provide a fire watch where required.",
       "Keep exits and emergency access unobstructed.",
       "Place suitable, inspected firefighting equipment nearby and brief workers on alarms and evacuation."
-    ]
+    ],
+    "potential_harm": "Fire or smoke can cause burns, breathing injury or prevent safe evacuation."
   },
   "housekeeping": {
     "query": "materials stacking slippery scattered debris blocked route openings",
@@ -77,7 +84,8 @@
       "Schedule housekeeping checks and remove waste promptly.",
       "Store materials on stable bases within planned stacking limits.",
       "Keep walkways, exits, edges and openings marked and unobstructed."
-    ]
+    ],
+    "potential_harm": "Trips, slips or falling materials can injure workers and obstruct emergency movement."
   },
   "confined": {
     "query": "confined entry ventilation oxygen toxic gas permit rescue",
@@ -87,7 +95,8 @@
       "Use a confined-space permit and isolate connected energy and services.",
       "Test and monitor the atmosphere and provide suitable ventilation.",
       "Maintain an attendant, reliable communication and a rehearsed rescue plan."
-    ]
+    ],
+    "potential_harm": "Oxygen deficiency or toxic atmosphere can cause rapid incapacitation or death."
   },
   "operations": {
     "query": "language migrant communication monsoon heat dust congested traffic temporary site",
@@ -97,7 +106,8 @@
       "Give task-specific toolbox talks and verify worker understanding.",
       "Plan site traffic, weather, heat, dust and welfare controls for the shift.",
       "Provide a clear way to report changing conditions and stop unsafe work."
-    ]
+    ],
+    "potential_harm": "Poor communication or uncontrolled site conditions can expose workers to preventable injury."
   },
   "trenching": {
     "query": "trench shoring ladder spoil collapse",
@@ -108,7 +118,8 @@
       "Locate buried utilities and assess soil and water conditions.",
       "Use designed shoring, shielding or safe slopes where required.",
       "Keep spoil and machinery back from edges; inspect after rain or ground changes."
-    ]
+    ],
+    "potential_harm": "A trench collapse or fall can cause burial, crushing or fatal injury."
   },
   "formwork": {
     "query": "formwork shores temporary support bracing stripping",
@@ -119,7 +130,8 @@
       "Use approved temporary-works design and defined inspection hold points.",
       "Check supports, bracing, loads and pour or stripping sequence.",
       "Prevent unauthorized changes and retain inspection records."
-    ]
+    ],
+    "potential_harm": "Failure of temporary works can cause collapse and multiple serious injuries."
   },
   "lifting": {
     "query": "crane rigging suspended load slings hoist",
@@ -130,7 +142,8 @@
       "Prepare a lift plan with load, equipment and ground-capacity checks.",
       "Inspect rigging and use competent operators and signalers.",
       "Barricade the lifting zone and keep people out from under suspended loads."
-    ]
+    ],
+    "potential_harm": "A dropped or swinging load can crush or strike workers."
   },
   "storage": {
     "query": "material storage stacking segregation access",
@@ -141,7 +154,8 @@
       "Set storage locations, stack-height limits and segregation rules.",
       "Keep materials away from edges, openings and access routes.",
       "Inspect unstable or weather-affected stacks regularly."
-    ]
+    ],
+    "potential_harm": "Unstable materials can fall or topple and crush or strike workers."
   },
   "emergency": {
     "query": "emergency access exits evacuation firefighting",
@@ -152,7 +166,8 @@
       "Maintain visible, unobstructed exit routes and emergency access.",
       "Test alarms and brief crews on evacuation and assembly points.",
       "Inspect firefighting equipment and rehearse emergency response."
-    ]
+    ],
+    "potential_harm": "Blocked exits or unavailable fire response can delay evacuation and worsen injuries."
   },
   "dust": {
     "query": "dust respiratory exposure ventilation fumes",
@@ -163,7 +178,8 @@
       "Use wet methods or local exhaust where suitable.",
       "Assess exposure and select respiratory protection through a fit and use programme.",
       "Maintain equipment and train workers on exposure controls and symptom reporting."
-    ]
+    ],
+    "potential_harm": "Dust or fumes can irritate or damage the respiratory system depending on substance and exposure."
   },
   "heat": {
     "query": "heat stress temperature workload rest hydration",
@@ -174,7 +190,8 @@
       "Plan acclimatization, shade, hydration and work-rest arrangements for conditions and workload.",
       "Train supervisors and crews to recognize and respond to heat illness.",
       "Use measured conditions and site procedures to adjust work; seek medical help for symptoms."
-    ]
+    ],
+    "potential_harm": "Heat illness can progress to a medical emergency if workers are not cooled and treated."
   },
   "monsoon": {
     "query": "monsoon rain drainage water flooding slippery",
@@ -185,7 +202,8 @@
       "Maintain drainage and monitor forecasts and water accumulation.",
       "Secure materials and inspect access routes during and after heavy rain.",
       "Protect or isolate electrical systems exposed to water and reassess ground stability before restarting."
-    ]
+    ],
+    "potential_harm": "Flooding, slippery surfaces or wet electrical equipment can cause falls, shock or other injury."
   },
   "access": {
     "query": "worker access movement walkway stairs barriers",
@@ -196,7 +214,8 @@
       "Plan and mark safe access and egress routes.",
       "Protect edges and openings with secured barriers or covers.",
       "Inspect routes at shift start and after site layout changes."
-    ]
+    ],
+    "potential_harm": "Unsafe access or unprotected openings can cause falls and serious injury."
   },
   "signage": {
     "query": "signage language communication warning training",
@@ -207,7 +226,8 @@
       "Use clear signs and signals suited to workforce languages.",
       "Provide induction and task briefings with a check-back for understanding.",
       "Update signs when site routes or hazards change."
-    ]
+    ],
+    "potential_harm": "Unclear warnings can contribute to workers entering a hazardous area or performing a task unsafely."
   },
   "demolition": {
     "query": "demolition debris stability sequence temporary support",
@@ -218,6 +238,7 @@
       "Use an engineered demolition sequence and pre-work structural survey.",
       "Identify and isolate utilities and install designed temporary supports.",
       "Maintain exclusion zones, controlled debris removal and ongoing stability checks."
-    ]
+    ],
+    "potential_harm": "Unplanned structural failure or falling debris can cause multiple severe injuries."
   }
 }

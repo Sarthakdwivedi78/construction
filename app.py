@@ -262,6 +262,8 @@ with st.sidebar:
     provider = st.selectbox("Vision provider", ["Off", "OpenAI API"] if vision_configured else ["Off"])
     if provider == "OpenAI API":
         st.caption("Sends sampled images and site context to the configured API.")
+    else:
+        st.caption("Visual reasoning is off. YOLO screening only reports its trained PPE classes; it does not assess every site hazard.")
     interval = st.number_input("Video sampling interval in seconds", 1, 60, 2)
     limit = st.number_input("Maximum video frames", 1, 60, 12)
 if st.button("Run inspection", disabled=not media_items):
@@ -330,12 +332,14 @@ if "result" in st.session_state:
         ], hide_index=True, use_container_width=True)
     for result_index, (output, previews, media_name) in enumerate(results):
         st.markdown(f"#### {media_name}")
-        st.subheader(output["overall_risk_level"])
-        estimate = output.get("visual_risk_estimate_percent")
-        st.metric("Highest visual risk-cue score", f"{estimate:.1f}%" if estimate is not None else "Not available")
-        st.caption("This is an uncalibrated detector score for a visible cue, not the probability of an accident or a legal compliance decision. Confirm findings on site.")
-        if estimate is None:
-            st.info(output.get("risk_estimate_status", "No numeric score was available for this inspection."))
+        hazards = output.get("identified_hazards", [])
+        if hazards:
+            high_count = sum(item.get("severity") == "High" for item in hazards)
+            st.subheader(f"Potential danger detected · {high_count} high-priority risk(s)")
+            st.caption("Screening result only. Confirm each observation at the site before taking action.")
+        else:
+            st.subheader("No mapped risk cue detected")
+            st.info("This does not mean the site is safe. The selected YOLO model screens its trained PPE classes only; hazards outside those classes may not be detected.")
         detections = output.get("detected_objects", [])
         if detections:
             detection_counts = {}
@@ -350,29 +354,34 @@ if "result" in st.session_state:
         for timestamp, preview in previews:
             with st.expander(f"Detections at {timestamp:.2f} s"):
                 st.image(preview)
-        for item in output["identified_hazards"]:
-            with st.expander(f'{item.get("risk_type", "Risk").title()}: {item["hazard"]} | {item["severity"]} priority'):
-                cue_score = item.get("visual_risk_estimate_percent")
-                st.metric("Visual cue score", f"{cue_score:.1f}%" if cue_score is not None else "Not available")
-                st.caption("Uncalibrated model score; it is not an incident probability. Human confirmation is required.")
-                st.markdown(f'**Observation:** {item["visual_evidence"]}')
-                st.markdown(f'**Assessment:** {item["violation_status"]} — {item["reasoning"]}')
-                st.markdown(f'**Immediate corrective action:** {item["corrective_action"]}')
-                preventive = item.get("preventive_measures", [])
-                if preventive:
-                    st.markdown("**Preventive measures**")
-                    for measure in preventive:
-                        st.markdown(f"- {measure}")
-                for source in item["retrieved_sources"]:
-                    st.markdown(f'**Source:** {source["indian_regulation"]} · {source["provision_number"]} · {source["verification_status"]}')
-                    if source.get("verification_status") == "historical":
-                        st.markdown("[Open the Ministry’s current Labour Codes page](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa)")
-                    else:
-                        st.markdown("[Open the Ministry’s Labour Codes page and source documents](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa)")
-                    st.caption(source.get("required_safety_condition", ""))
-                if item["model_assessment"]:
-                    st.caption("Unreviewed vision model assessment")
-                    st.json(item["model_assessment"])
+        for item in hazards:
+            st.markdown(f'### {item["hazard"]}')
+            danger_label = "POTENTIAL DANGER — HIGH PRIORITY" if item.get("severity") == "High" else "CAUTION — MODERATE PRIORITY"
+            if item.get("severity") == "High":
+                st.error(danger_label)
+            else:
+                st.warning(danger_label)
+            st.markdown(f'**Risk type:** {item.get("risk_type", "Site safety").title()}')
+            st.markdown(f'**Possible harm:** {item.get("potential_harm", "Confirm the possible consequence with a competent site supervisor.")}')
+            cue_score = item.get("visual_risk_estimate_percent")
+            if cue_score is not None:
+                st.caption(f'YOLO visual cue confidence: {cue_score:.1f}% (not an accident probability).')
+            st.markdown(f'**What the model saw:** {item["visual_evidence"]}')
+            st.markdown(f'**Assessment:** {item["violation_status"]} — {item["reasoning"]}')
+            st.markdown(f'**Immediate action:** {item["corrective_action"]}')
+            preventive = item.get("preventive_measures", [])
+            if preventive:
+                st.markdown("**How to prevent it**")
+                for measure in preventive:
+                    st.markdown(f"- {measure}")
+            for source in item["retrieved_sources"]:
+                st.markdown(f'**Related rule:** {source["indian_regulation"]} · {source["provision_number"]} · {source["verification_status"]}')
+                st.markdown("[Open the Ministry’s Labour Codes page and source documents](https://www.labour.gov.in/offerings/schemes-and-services/details/labour-codes-gzNzQzMtQWa)")
+                st.caption(source.get("required_safety_condition", ""))
+            if item["model_assessment"]:
+                st.caption("AI visual assessment; verify on site.")
+                st.json(item["model_assessment"])
+            st.divider()
         st.json(output, expanded=False)
         stem = Path(media_name).stem or f"inspection-{result_index + 1}"
         st.download_button("Download JSON", json.dumps(output, indent=2),
