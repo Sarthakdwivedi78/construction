@@ -13,9 +13,26 @@ python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
+## Indian PPE fine-tune and safety framework
+
+The authors' [PPE compliance project](https://github.com/Sankarlalr23/Detection-of-PPE-Compliance-on-Construction-Site-Using-CV) provides Pascal VOC XML boxes for `NOTSAFE`, `NoHardhat`, `NoJacket`, and `SAFE`. The paper describes images from Indian construction sites and web sources; it reports 2,509 total images, while the public repository contains 2,217 training and 184 validation images. The checked-in text lists disagree with some XML files, so the conversion script uses the paired XML as ground truth and records those discrepancies in `conversion_summary.json`.
+
+The local fine-tuned checkpoint is selected by default in the Streamlit sidebar when available; the original YOLO26n baseline remains selectable. The completed local run and validation report are under `runs/indian-ppe/run-20261110-220848-utc/`. Validation results are not an independent test result. The upstream dataset repository has no license file, so keep the dataset and derived checkpoint local until redistribution rights are confirmed.
+
+The app’s knowledge corpus contains the OSHWC Code, 2020, which commenced on 21 November 2025, and the OSHWC (Central) Rules, 2026, published on 8 May 2026. The 2026 Central Rules supersede the BOCW Central Rules, 1998 in the corpus; historical references remain marked as historical. State-specific requirements and the appropriate government must still be checked for each site. See [India Code](https://www.indiacode.nic.in/bitstream/123456789/22041/1/a2020-37.pdf), the [Gazette commencement notification](https://egazette.gov.in/WriteReadData/2025/267884.pdf), and the [Ministry’s 2026 Rules](https://www.labour.gov.in/static/uploads/2026/05/ee246f790cad0b8e99c3828f34fa09a6.pdf). App output is visual screening support and does not certify compliance or site safety.
+
+After obtaining the authors' dataset, convert and train locally:
+
+```text
+python prepare_indian_ppe_yolo.py PATH_TO_REPOSITORY/Data --output data/raw/indian-ppe-yolo-ready
+python train_indian_ppe.py --epochs 20 --imgsz 320 --batch 8 --device cpu
+```
+
+The app offers the Indian four-class checkpoint as a separate detector after `runs/indian-ppe/*/weights/best.pt` exists. This model predicts person-level compliance categories, not the baseline's 11 PPE object classes. The public data repository has no license file; do not redistribute its images or the derived checkpoint without confirming rights.
+
 ## Deploy on Streamlit Community Cloud
 
-Connect the GitHub repository, select branch `main`, set the entrypoint to `app.py`, and choose Python 3.12. The release includes the evaluated CPU checkpoint. BM25 works without external credentials. Optional vision requires `OPENAI_API_KEY` and `SAFETY_VISION_MODEL` in the deployment's secrets. The app keeps recent reports in browser-session state. Download a report before closing the session.
+Connect the GitHub repository, select branch `main`, set the entrypoint to `app.py`, and choose Python 3.12. BM25 works without external credentials. Optional vision requires `OPENAI_API_KEY` and `SAFETY_VISION_MODEL` in the deployment's secrets. The app keeps recent reports in browser-session state. Download a report before closing the session. The Indian fine-tune and raw dataset are excluded from Git because upstream redistribution rights are not documented. To enable the fine-tune on a server, first obtain permission to deploy the checkpoint, then provide it through the `INDIAN_PPE_WEIGHTS` environment variable or an approved private artifact store. Until that permission is confirmed, the public app falls back to the separately licensed baseline model.
 
 ## Sources
 

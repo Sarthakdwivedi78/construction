@@ -8,6 +8,9 @@ CUES = {
     "NO-Hardhat": ("ppe", "Possible missing hardhat"),
     "NO-Safety Vest": ("ppe", "Possible missing high-visibility vest"),
     "NO-Mask": ("ppe", "Possible missing face covering"),
+    "NOTSAFE": ("ppe", "Possible PPE non-compliance (dataset NOTSAFE class)"),
+    "NoHardhat": ("ppe", "Possible missing hardhat (dataset NoHardhat class)"),
+    "NoJacket": ("ppe", "Possible missing safety jacket (dataset NoJacket class)"),
 }
 STATUSES = {"Violation", "No Violation", "Insufficient Evidence"}
 

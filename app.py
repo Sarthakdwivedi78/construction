@@ -8,20 +8,37 @@ from time import perf_counter
 
 import cv2
 import streamlit as st
-from detection import detect, frames, load_detector
+from detection import INDIAN_PPE_LABELS, detect, frames, load_detector
 from measurements import parse_measurements
 from reasoning import Vision, inspect, report
 from reporting import pdf
 from retrieval import Index, ROOT
 
+def indian_ppe_checkpoint():
+    configured = os.getenv("INDIAN_PPE_WEIGHTS", "").strip()
+    if configured:
+        path = Path(configured).expanduser()
+        return path if path.is_file() else None
+    candidates = sorted((ROOT / "runs" / "indian-ppe").glob("*/weights/best.pt"),
+                        key=lambda path: path.stat().st_mtime)
+    return candidates[-1] if candidates else None
+
 @st.cache_resource
-def detector():
-    path = ROOT / "models" / "yolo" / "yolo26n.pt"
-    with path.open("rb") as weights:
-        digest = hashlib.file_digest(weights, "sha256").hexdigest()
-    if digest != "80c463daf7cf151f20e92231276162607bc4611c013cfb6e052b89442b764b1d":
-        raise ValueError("The bundled model checksum did not match the evaluated checkpoint.")
-    model = load_detector(path)
+def detector(model_choice):
+    if model_choice == "Indian PPE fine-tune (4 classes)":
+        path = indian_ppe_checkpoint()
+        if path is None:
+            raise FileNotFoundError("Set INDIAN_PPE_WEIGHTS to a valid checkpoint or keep a completed run under runs/indian-ppe/.")
+        model = load_detector(path, INDIAN_PPE_LABELS)
+    else:
+        path = ROOT / "models" / "yolo" / "yolo26n.pt"
+        digest = hashlib.sha256()
+        with path.open("rb") as weights:
+            for block in iter(lambda: weights.read(1024 * 1024), b""):
+                digest.update(block)
+        if digest.hexdigest() != "80c463daf7cf151f20e92231276162607bc4611c013cfb6e052b89442b764b1d":
+            raise ValueError("The bundled model checksum did not match the evaluated checkpoint.")
+        model = load_detector(path)
     model.to("cpu")
     return model
 
@@ -31,15 +48,61 @@ def index(hybrid):
 
 st.set_page_config(page_title="Construction Safety Inspection", layout="wide")
 st.title("Indian Construction Site Safety Inspection")
-st.caption("Screening of visible conditions and retrieval of Indian safety provisions.")
+st.caption("Indian PPE screening with retrieval from the current Indian safety corpus. Every finding needs human review.")
 page = st.sidebar.radio("Workspace", ["Home", "Live Inspection", "Image Inspection", "Video Inspection",
                        "Regulatory Knowledge Base", "Retrieval Testing", "Model Evaluation",
                        "Training Dashboard", "Inspection History"])
+indian_weights = indian_ppe_checkpoint()
+model_options = ["Baseline YOLO26n"]
+if indian_weights:
+    model_options.append("Indian PPE fine-tune (4 classes)")
+model_choice = st.sidebar.selectbox("Detection model", model_options,
+                                    index=1 if indian_weights else 0)
 if page == "Home":
-    st.write("Upload an image or sample a video to screen visible construction hazards.")
-    st.write("Start with Image Inspection or explore the regulatory corpus in the sidebar.")
+    st.subheader("Current Indian safety framework")
+    st.write("The Occupational Safety, Health and Working Conditions Code, 2020 came into force on 21 November 2025. The Occupational Safety, Health and Working Conditions (Central) Rules, 2026 were published on 8 May 2026 and supersede the BOCW Central Rules, 1998. State-specific notifications and site applicability still need review.")
+    st.markdown("[OSHWC Code, 2020 — India Code](https://www.indiacode.nic.in/bitstream/123456789/22041/1/a2020-37.pdf) · [OSHWC (Central) Rules, 2026 — Ministry of Labour and Employment](https://www.labour.gov.in/static/uploads/2026/05/ee246f790cad0b8e99c3828f34fa09a6.pdf) · [Commencement notification — Gazette of India](https://egazette.gov.in/WriteReadData/2025/267884.pdf)")
+    st.warning("This app screens visual cues; it cannot determine legal compliance or certify that a site is safe. Confirm the site, activity, appropriate government and applicable State requirements with a qualified safety professional.")
+    st.subheader("Indian PPE model")
+    if indian_weights:
+        st.success(f"Indian PPE fine-tune selected by default · classes: {', '.join(INDIAN_PPE_LABELS)}")
+        india_eval = indian_weights.parent.parent / "best_validation.json"
+        if india_eval.is_file():
+            evaluation = json.loads(india_eval.read_text(encoding="utf-8"))
+            scores = evaluation["overall"]
+            cols = st.columns(4)
+            for col, label, key in zip(cols, ("Precision", "Recall", "mAP@0.5", "mAP@0.5:0.95"),
+                                       ("precision", "recall", "map50", "map50_95")):
+                col.metric(label, f"{scores[key]:.3f}")
+            st.caption("Validation only: 184 images and 332 boxes, including 18 NoHardhat boxes. This is not an independent test set; the data includes Indian-site and web imagery.")
+        st.caption(f"Checkpoint: {indian_weights}")
+    else:
+        st.info("No local Indian PPE checkpoint is configured. The app is using the original baseline. Set INDIAN_PPE_WEIGHTS to the trained checkpoint to enable the Indian fine-tune.")
+    st.write("Choose Image Inspection, Video Inspection or Live Inspection to screen site media. Use the sidebar to select the site state and work context before retrieval.")
     st.stop()
 if page == "Training Dashboard":
+    if indian_weights:
+        run_dir = indian_weights.parent.parent
+        manifest_path = run_dir / "training_manifest.json"
+        metrics_path = run_dir / "metrics.json"
+        if manifest_path.is_file() and metrics_path.is_file():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            summary = json.loads(metrics_path.read_text(encoding="utf-8"))
+            scores = summary["validation_of_selected_best_checkpoint"]["overall"]
+            st.subheader("Indian PPE fine-tune")
+            st.caption(f"{manifest['completed_epochs']} epochs · {manifest['dataset_conversion_counts']['train']['images']:,} training images · {manifest['dataset_conversion_counts']['val']['images']:,} validation images · classes: {', '.join(manifest['trained_classes'])}")
+            cols = st.columns(4)
+            for col, label, key in zip(cols, ("Precision", "Recall", "mAP@0.5", "mAP@0.5:0.95"),
+                                       ("precision", "recall", "map50", "map50_95")):
+                col.metric(label, f"{scores[key]:.3f}")
+            st.warning("These are validation results, not an independent test. The validation set has only 18 NoHardhat boxes.")
+            curve = run_dir / "results.png"
+            if curve.is_file():
+                st.image(str(curve), caption="Training and validation curves")
+            report_path = run_dir / "report.md"
+            if report_path.is_file():
+                st.download_button("Download Indian PPE training report", report_path.read_bytes(),
+                                   "indian-ppe-training-report.md", "text/markdown")
     runs = sorted((ROOT / "models" / "checkpoints").glob("*/results.csv"))
     if not runs:
         st.info("Training runs appear here after validation and optional YOLO fine-tuning.")
@@ -49,7 +112,7 @@ if page == "Training Dashboard":
             st.dataframe(pd.read_csv(run))
     st.stop()
 if page == "Regulatory Knowledge Base":
-    st.dataframe(index(False).rows, width="stretch")
+    st.dataframe(index(False).rows, use_container_width=True)
     st.stop()
 if page == "Retrieval Testing":
     taxonomy = json.loads((ROOT / "taxonomy.json").read_text(encoding="utf-8-sig"))
@@ -64,6 +127,30 @@ if page == "Retrieval Testing":
         st.json(index(hybrid).search(query, category, authority, state=state))
     st.stop()
 if page == "Model Evaluation":
+    if indian_weights:
+        run_dir = indian_weights.parent.parent
+        validation_path = run_dir / "best_validation.json"
+        if validation_path.is_file():
+            result = json.loads(validation_path.read_text(encoding="utf-8"))
+            st.subheader("Indian PPE fine-tune validation")
+            st.caption("Author repository's held-out validation split · 184 images · 332 boxes · checkpoint selected from this same split")
+            scores = result["overall"]
+            cols = st.columns(4)
+            for col, label, key in zip(cols, ("Precision", "Recall", "mAP@0.5", "mAP@0.5:0.95"),
+                                       ("precision", "recall", "map50", "map50_95")):
+                col.metric(label, f"{scores[key]:.3f}")
+            metrics_doc = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
+            class_counts = metrics_doc["dataset"]["validation"]["classes"]
+            st.dataframe([
+                {"Class": name, "Validation boxes": class_counts.get(name, 0),
+                 "Precision": values["precision"], "Recall": values["recall"],
+                 "mAP@0.5": values["map50"], "mAP@0.5:0.95": values["map50_95"]}
+                for name, values in result["classes"].items()
+            ], hide_index=True, use_container_width=True)
+            st.warning("Validation results are not a separate test result. Scores may be optimistic because this split was also used to select the best checkpoint.")
+            st.download_button("Download Indian PPE metrics", (run_dir / "metrics.json").read_bytes(),
+                               "indian-ppe-metrics.json", "application/json")
+            st.divider()
     from evaluate import retrieval
 
     benchmark_dir = Path(os.environ.get("SAFETY_PPE_EVAL_DIR") or ROOT / "outputs" / "ppe-evaluation")
@@ -93,7 +180,7 @@ if page == "Model Evaluation":
                 {"Published annotation": "Missing PPE", "Alert": metrics["tp"], "No alert": metrics["fn"]},
                 {"Published annotation": "No annotated missing PPE", "Alert": metrics["fp"], "No alert": metrics["tn"]},
             ],
-            width="stretch",
+            use_container_width=True,
             hide_index=True,
         )
         st.warning(
@@ -115,7 +202,7 @@ if page == "Model Evaluation":
     completed = [json.loads(path.read_text(encoding="utf-8-sig"))
                  for path in sorted(evaluation.glob("*.json"))]
     if completed:
-        st.dataframe(completed, width="stretch")
+        st.dataframe(completed, use_container_width=True)
         st.bar_chart(completed, x="mode", y="latency_ms")
     if st.button("Run BM25 checks"):
         st.json(retrieval(False, 3))
@@ -142,18 +229,31 @@ if page == "Inspection History":
     st.stop()
 if page == "Live Inspection":
     media = st.camera_input("Capture a site image")
+    media_items = [media] if media is not None else []
 else:
     formats = ["mp4", "mov", "avi"] if page == "Video Inspection" else ["jpg", "jpeg", "png"]
-    media = st.file_uploader("Site media", type=formats)
+    multiple_images = page == "Image Inspection"
+    media = st.file_uploader("Site media", type=formats, accept_multiple_files=multiple_images)
+    media_items = media if multiple_images else ([media] if media is not None else [])
+    if multiple_images and len(media_items) > 1:
+        st.caption(f"{len(media_items)} images selected. Each image will receive its own inspection and downloadable report.")
 with st.sidebar:
     site = st.text_input("Site type", "Building construction")
     activity = st.text_input("Work activity")
-    state = st.text_input("State or union territory", "West Bengal")
+    states_and_uts = ["West Bengal", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+                      "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+                      "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+                      "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+                      "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "Andaman and Nicobar Islands",
+                      "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+                      "Ladakh", "Lakshadweep", "Puducherry", "Unknown / not selected"]
+    state = st.selectbox("State or union territory", states_and_uts)
     authority = st.selectbox("Appropriate government", ["Unknown", "Central", "State"])
     date = st.date_input("Inspection date")
     measurements = st.file_uploader("Optional measured site evidence", type=["json"])
     checks = st.file_uploader("Optional inspector review records", type=["json"])
-    st.caption("YOLO26n · Bundled benchmark checkpoint")
+    st.caption(f"Selected detection model: {model_choice}")
+    st.caption("Central and State applicability can differ; confirm the provision for the actual site and work activity.")
     dense_available = all(importlib.util.find_spec(name) for name in ("faiss", "sentence_transformers"))
     hybrid = st.checkbox("Enable BGE and FAISS", disabled=not dense_available,
                          help="Dense retrieval requires the optional hybrid dependencies.")
@@ -163,10 +263,10 @@ with st.sidebar:
         st.caption("Sends sampled images and site context to the configured API.")
     interval = st.number_input("Video sampling interval in seconds", 1, 60, 2)
     limit = st.number_input("Maximum video frames", 1, 60, 12)
-if st.button("Run inspection", disabled=media is None):
+if st.button("Run inspection", disabled=not media_items):
     st.session_state.pop("result", None)
     try:
-        model = detector()
+        model = detector(model_choice)
         kb = index(hybrid)
         if provider == "OpenAI API" and not os.getenv("SAFETY_VISION_MODEL"):
             raise ValueError("Set SAFETY_VISION_MODEL to a vision-capable Responses API model.")
@@ -181,53 +281,75 @@ if st.button("Run inspection", disabled=media is None):
             if not isinstance(review, dict) or any(not isinstance(row, dict) for row in review.values()):
                 raise ValueError("Inspector review records must map provision IDs to record objects.")
             meta["reviewed_checks"] = review
-        start = perf_counter()
-        records, previews = [], []
-        suffix = Path(media.name).suffix.lower()
-        with tempfile.TemporaryDirectory() as folder:
-            target = Path(folder) / ("upload" + suffix)
-            target.write_bytes(media.getbuffer())
-            with st.spinner("Inspecting selected media"):
-                for timestamp, frame in frames(target, suffix in {".mp4", ".mov", ".avi"}, interval, limit):
-                    objects, annotated = detect(model, frame)
-                    ok, original = cv2.imencode(".jpg", frame)
-                    if not ok:
-                        raise ValueError("Could not encode frame.")
-                    hazards, warnings = inspect(objects, kb, meta, taxonomy, original.tobytes(), vision)
-                    records.append(dict(timestamp_seconds=timestamp, objects=objects,
-                                        hazards=hazards, warnings=warnings))
-                    ok, preview = cv2.imencode(".jpg", annotated)
-                    if ok:
-                        previews.append((timestamp, preview.tobytes()))
-        output = report(meta, records, perf_counter() - start)
-        output["retrieval_mode"] = "BM25 + BGE" if hybrid else "BM25"
-        output["vision_enabled"] = vision is not None
-        output["vision_provider"] = provider
-        output["vision_model"] = vision.model if vision else None
-        from datetime import datetime, timezone
-        output["created_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        completed = []
+        for media_index, media in enumerate(media_items):
+            start = perf_counter()
+            records, previews = [], []
+            suffix = Path(media.name).suffix.lower()
+            with tempfile.TemporaryDirectory() as folder:
+                target = Path(folder) / ("upload" + suffix)
+                target.write_bytes(media.getbuffer())
+                with st.spinner(f"Inspecting {media.name} ({media_index + 1}/{len(media_items)})"):
+                    for timestamp, frame in frames(target, suffix in {".mp4", ".mov", ".avi"}, interval, limit):
+                        objects, annotated = detect(model, frame)
+                        ok, original = cv2.imencode(".jpg", frame)
+                        if not ok:
+                            raise ValueError("Could not encode frame.")
+                        hazards, warnings = inspect(objects, kb, meta, taxonomy, original.tobytes(), vision)
+                        records.append(dict(timestamp_seconds=timestamp, objects=objects,
+                                            hazards=hazards, warnings=warnings))
+                        ok, preview = cv2.imencode(".jpg", annotated)
+                        if ok:
+                            previews.append((timestamp, preview.tobytes()))
+            output = report(meta, records, perf_counter() - start)
+            output["source_media"] = media.name
+            output["retrieval_mode"] = "BM25 + BGE" if hybrid else "BM25"
+            output["vision_enabled"] = vision is not None
+            output["vision_provider"] = provider
+            output["vision_model"] = vision.model if vision else None
+            from datetime import datetime, timezone
+            output["created_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            completed.append((output, previews, media.name))
         history = st.session_state.get("inspection_history", [])
-        st.session_state["inspection_history"] = [output, *history][:20]
-        st.session_state["result"] = output, previews
+        st.session_state["inspection_history"] = [item[0] for item in completed] + history
+        st.session_state["inspection_history"] = st.session_state["inspection_history"][:20]
+        st.session_state["result"] = completed
     except Exception as exc:
         st.error(f"Inspection could not run ({type(exc).__name__}). Check model, dependencies and media.")
         if isinstance(exc, (FileNotFoundError, ValueError)):
             st.caption(str(exc))
 if "result" in st.session_state:
-    output, previews = st.session_state["result"]
-    st.subheader(output["overall_risk_level"])
-    for timestamp, preview in previews:
-        with st.expander(f"Detections at {timestamp:.2f} s"):
-            st.image(preview)
-    for item in output["identified_hazards"]:
-        with st.expander(item["hazard"] + " | " + item["violation_status"]):
-            st.write(item["visual_evidence"], item["reasoning"], item["corrective_action"])
-            for source in item["retrieved_sources"]:
-                st.write(source["indian_regulation"], source["provision_number"],
-                         source["verification_status"], source["source_url"])
-            if item["model_assessment"]:
-                st.caption("Unreviewed vision model assessment")
-                st.json(item["model_assessment"])
-    st.json(output, expanded=False)
-    st.download_button("Download JSON", json.dumps(output, indent=2), "inspection.json")
-    st.download_button("Download PDF", pdf(output), "inspection.pdf", "application/pdf")
+    results = st.session_state["result"]
+    if len(results) > 1:
+        st.subheader(f"Batch summary · {len(results)} images")
+        st.dataframe([
+            {"Image": name, "Screening result": output["overall_risk_level"],
+             "Identified hazards": len(output["identified_hazards"])}
+            for output, _, name in results
+        ], hide_index=True, use_container_width=True)
+    for result_index, (output, previews, media_name) in enumerate(results):
+        st.markdown(f"#### {media_name}")
+        st.subheader(output["overall_risk_level"])
+        for timestamp, preview in previews:
+            with st.expander(f"Detections at {timestamp:.2f} s"):
+                st.image(preview)
+        for item in output["identified_hazards"]:
+            with st.expander(item["hazard"] + " | " + item["violation_status"]):
+                st.write(item["visual_evidence"], item["reasoning"], item["corrective_action"])
+                for source in item["retrieved_sources"]:
+                    st.write(source["indian_regulation"], source["provision_number"],
+                             source["verification_status"], source["source_url"])
+                if item["model_assessment"]:
+                    st.caption("Unreviewed vision model assessment")
+                    st.json(item["model_assessment"])
+        st.json(output, expanded=False)
+        stem = Path(media_name).stem or f"inspection-{result_index + 1}"
+        st.download_button("Download JSON", json.dumps(output, indent=2),
+                           f"{stem}-inspection.json", key=f"inspection-json-{result_index}")
+        try:
+            pdf_data = pdf(output)
+        except ImportError:
+            st.caption("PDF export requires the reportlab package listed in requirements.txt.")
+        else:
+            st.download_button("Download PDF", pdf_data, f"{stem}-inspection.pdf",
+                               "application/pdf", key=f"inspection-pdf-{result_index}")

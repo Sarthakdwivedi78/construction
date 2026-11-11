@@ -2,14 +2,15 @@ from pathlib import Path
 
 LABELS = ("Hardhat", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety Vest", "Person",
           "Safety Cone", "Safety Vest", "machinery", "utility pole", "vehicle")
+INDIAN_PPE_LABELS = ("NOTSAFE", "NoHardhat", "NoJacket", "SAFE")
 
-def load_detector(path):
+def load_detector(path, expected_labels=LABELS):
     from ultralytics import YOLO
     if not Path(path).is_file():
         raise FileNotFoundError("Supply a trusted upstream construction checkpoint.")
     model = YOLO(str(path))
-    if tuple(model.names[i] for i in sorted(model.names)) != LABELS:
-        raise ValueError("Checkpoint label map differs from the documented baseline.")
+    if tuple(model.names[i] for i in sorted(model.names)) != tuple(expected_labels):
+        raise ValueError("Checkpoint class mapping does not match the selected detector type.")
     return model
 
 def detect(model, frame, confidence=0.25):
