@@ -23,6 +23,36 @@ def indian_ppe_checkpoint():
                         key=lambda path: path.stat().st_mtime)
     return candidates[-1] if candidates else None
 
+def assessment_detail(item):
+    model_assessment = item.get("model_assessment")
+    if isinstance(model_assessment, dict) and isinstance(model_assessment.get("reasoning"), str):
+        return f'Vision model suggestion (unreviewed): {model_assessment["reasoning"]}'
+    explanation = item.get("assessment_explanation") or item.get("reasoning", "")
+    old_generic = explanation.startswith(("Confirm the observation, task, applicable provision",
+                                          "The image shows a possible risk cue, but does not by itself"))
+    if explanation and not old_generic:
+        return explanation
+    parts = []
+    if item.get("retrieved_evidence"):
+        parts.append("Knowledge-base condition: " + item["retrieved_evidence"])
+    if item.get("additional_evidence_needed"):
+        parts.append("Evidence to check: " + item["additional_evidence_needed"])
+    if item.get("applicability_conditions"):
+        parts.append("Applicability to confirm: " + item["applicability_conditions"])
+    if parts:
+        return " · ".join(parts)
+    return "Check the task, worker exposure, controls and applicable provision at the site."
+
+def assessment_label(item):
+    if item.get("assessment_display_status"):
+        return item["assessment_display_status"]
+    suggestion = item.get("model_assessment")
+    if isinstance(suggestion, dict) and suggestion.get("status"):
+        return f'AI suggestion: {suggestion["status"]} · needs human review'
+    if item.get("violation_status") == "Insufficient Evidence":
+        return "Needs site verification"
+    return item.get("violation_status", "Needs site verification")
+
 @st.cache_resource
 def detector(model_choice):
     if model_choice == "Indian PPE fine-tune (4 classes)":
@@ -367,8 +397,8 @@ if "result" in st.session_state:
             if cue_score is not None:
                 st.caption(f'YOLO visual cue confidence: {cue_score:.1f}% (not an accident probability).')
             st.markdown(f'**What the model saw:** {item["visual_evidence"]}')
-            st.markdown(f'**Assessment:** {item.get("assessment_display_status", item["violation_status"])}')
-            st.caption(f'Why: {item["reasoning"]}')
+            st.markdown(f'**Assessment:** {assessment_label(item)}')
+            st.caption(f'Why ({item.get("assessment_basis", "knowledge-base review")}): {assessment_detail(item)}')
             st.markdown(f'**Immediate action:** {item["corrective_action"]}')
             preventive = item.get("preventive_measures", [])
             if preventive:

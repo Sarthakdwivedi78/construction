@@ -8,7 +8,8 @@
       "Provide suitable, correctly sized PPE and replace damaged items.",
       "Train workers in fit, use, care and limitations; include supervisor checks."
     ],
-    "potential_harm": "Injury may be more severe if workers are exposed to task hazards without suitable protective equipment; the specific exposure needs on-site confirmation."
+    "potential_harm": "Injury may be more severe if workers are exposed to task hazards without suitable protective equipment; the specific exposure needs on-site confirmation.",
+    "required_evidence": "Confirm the task, specific exposure, PPE type and fit, worker position, and whether the PPE is being worn correctly."
   },
   "height": {
     "query": "fall edge guardrail ladder roof opening safety net platform",
@@ -19,7 +20,8 @@
       "Inspect access equipment and fall-protection systems before use.",
       "Plan anchorage, rescue arrangements and supervision for work at height."
     ],
-    "potential_harm": "A fall from height can cause severe injury or death."
+    "potential_harm": "A fall from height can cause severe injury or death.",
+    "required_evidence": "Check working height, edge or opening protection, access equipment, fall-arrest arrangements and rescue plan."
   },
   "excavation": {
     "query": "trench depth spoil edge shoring barricade access water collapse",
@@ -30,7 +32,8 @@
       "Use designed shoring, shielding or safe battering where required.",
       "Keep spoil and plant away from edges, provide safe access, and reinspect after rain or ground changes."
     ],
-    "potential_harm": "A trench collapse, fall or contact with buried services can cause fatal injury."
+    "potential_harm": "A trench collapse, fall or contact with buried services can cause fatal injury.",
+    "required_evidence": "Check depth, soil and water conditions, buried services, spoil distance, access and designed protective system."
   },
   "scaffold": {
     "query": "scaffolding formwork braces toe board overload temporary support",
@@ -41,7 +44,8 @@
       "Inspect ties, bracing, platforms, guardrails and foundations before use and after changes.",
       "Display inspection status and prevent overloading."
     ],
-    "potential_harm": "A fall or scaffold/formwork collapse can cause severe injury or death."
+    "potential_harm": "A fall or scaffold/formwork collapse can cause severe injury or death.",
+    "required_evidence": "Check competent-person inspection, scaffold tag, foundations, ties, bracing, platform, guardrails and load limits."
   },
   "electrical": {
     "query": "exposed cables wiring water generator earthing protection",
@@ -52,7 +56,8 @@
       "Inspect cables, earthing and protective devices; use suitable residual-current protection.",
       "Route and protect temporary wiring from water, traffic and mechanical damage."
     ],
-    "potential_harm": "Electric shock, burns or electrical fire can cause severe injury or death."
+    "potential_harm": "Electric shock, burns or electrical fire can cause severe injury or death.",
+    "required_evidence": "Check isolation status, cable condition, earthing, protective devices and whether the area is wet or energized."
   },
   "machinery": {
     "query": "crane lifting suspended load vehicle machinery pedestrian guard",
@@ -63,7 +68,8 @@
       "Use inspected lifting gear, a lift plan and competent operators and signalers.",
       "Keep machine guards and emergency stops in place and inspect before use."
     ],
-    "potential_harm": "Crushing, entanglement or a struck-by event can cause severe injury."
+    "potential_harm": "Crushing, entanglement or a struck-by event can cause severe injury.",
+    "required_evidence": "Check the task, machine guarding, pedestrian separation, operator authorization, lift plan and equipment condition."
   },
   "fire": {
     "query": "fire extinguisher exits emergency signage welding flammable hot work",
@@ -74,7 +80,8 @@
       "Keep exits and emergency access unobstructed.",
       "Place suitable, inspected firefighting equipment nearby and brief workers on alarms and evacuation."
     ],
-    "potential_harm": "Fire or smoke can cause burns, breathing injury or prevent safe evacuation."
+    "potential_harm": "Fire or smoke can cause burns, breathing injury or prevent safe evacuation.",
+    "required_evidence": "Check hot-work permit, combustible material, fire watch, extinguisher readiness, alarm and unobstructed exits."
   },
   "housekeeping": {
     "query": "materials stacking slippery scattered debris blocked route openings",
@@ -85,7 +92,8 @@
       "Store materials on stable bases within planned stacking limits.",
       "Keep walkways, exits, edges and openings marked and unobstructed."
     ],
-    "potential_harm": "Trips, slips or falling materials can injure workers and obstruct emergency movement."
+    "potential_harm": "Trips, slips or falling materials can injure workers and obstruct emergency movement.",
+    "required_evidence": "Inspect the full walking route, floor condition, material stability, openings and emergency access."
   },
   "confined": {
     "query": "confined entry ventilation oxygen toxic gas permit rescue",
@@ -96,7 +104,8 @@
       "Test and monitor the atmosphere and provide suitable ventilation.",
       "Maintain an attendant, reliable communication and a rehearsed rescue plan."
     ],
-    "potential_harm": "Oxygen deficiency or toxic atmosphere can cause rapid incapacitation or death."
+    "potential_harm": "Oxygen deficiency or toxic atmosphere can cause rapid incapacitation or death.",
+    "required_evidence": "Check permit, isolation, atmospheric test, ventilation, attendant, communication and rescue readiness."
   },
   "operations": {
     "query": "language migrant communication monsoon heat dust congested traffic temporary site",
@@ -107,13 +116,14 @@
       "Plan site traffic, weather, heat, dust and welfare controls for the shift.",
       "Provide a clear way to report changing conditions and stop unsafe work."
     ],
-    "potential_harm": "Poor communication or uncontrolled site conditions can expose workers to preventable injury."
+    "potential_harm": "Poor communication or uncontrolled site conditions can expose workers to preventable injury.",
+    "required_evidence": "Confirm task briefing, worker understanding, traffic plan, weather and exposure controls."
   },
   "trenching": {
     "query": "trench shoring ladder spoil collapse",
     "severity": "High",
     "action": "Keep people clear until a competent person checks soil, access and protective systems.",
-    "required_evidence": "Depth and protection measurements",
+    "required_evidence": "Measure excavation depth and verify soil assessment, buried services, shoring or slope, safe access and spoil setback.",
     "preventive_measures": [
       "Locate buried utilities and assess soil and water conditions.",
       "Use designed shoring, shielding or safe slopes where required.",
@@ -125,7 +135,7 @@
     "query": "formwork shores temporary support bracing stripping",
     "severity": "High",
     "action": "Hold the activity until a competent person confirms the design, inspection and temporary support.",
-    "required_evidence": "Design and inspection records",
+    "required_evidence": "Review temporary-works design, loads, propping, bracing, inspection hold points and pour or stripping sequence.",
     "preventive_measures": [
       "Use approved temporary-works design and defined inspection hold points.",
       "Check supports, bracing, loads and pour or stripping sequence.",
@@ -137,7 +147,7 @@
     "query": "crane rigging suspended load slings hoist",
     "severity": "High",
     "action": "Pause the lift if the load path, rigging or exclusion zone is uncertain; resume after the lift team checks the plan.",
-    "required_evidence": "Lift plan, rated load and exclusion zone",
+    "required_evidence": "Verify load weight, equipment rating, rigging inspection, ground capacity, lift plan, signaler and exclusion zone.",
     "preventive_measures": [
       "Prepare a lift plan with load, equipment and ground-capacity checks.",
       "Inspect rigging and use competent operators and signalers.",
@@ -149,7 +159,7 @@
     "query": "material storage stacking segregation access",
     "severity": "Moderate",
     "action": "Stabilize the stack and clear the access route before the area is used.",
-    "required_evidence": "Stack condition and load data",
+    "required_evidence": "Check stack stability and height, load and material type, edge clearance, segregation and route clearance.",
     "preventive_measures": [
       "Set storage locations, stack-height limits and segregation rules.",
       "Keep materials away from edges, openings and access routes.",
@@ -161,7 +171,7 @@
     "query": "emergency access exits evacuation firefighting",
     "severity": "High",
     "action": "Keep escape routes clear and suspend hot work if alarms, fire watch or firefighting provisions are unavailable.",
-    "required_evidence": "Site plan and equipment inspection",
+    "required_evidence": "Test alarms and emergency lighting; inspect exits, evacuation routes, equipment and drill records.",
     "preventive_measures": [
       "Maintain visible, unobstructed exit routes and emergency access.",
       "Test alarms and brief crews on evacuation and assembly points.",
@@ -173,7 +183,7 @@
     "query": "dust respiratory exposure ventilation fumes",
     "severity": "Moderate",
     "action": "Reduce dust or fume exposure, move workers out of visible plumes where practicable, and check task controls.",
-    "required_evidence": "Exposure measurements and respiratory control records",
+    "required_evidence": "Identify the substance and task, assess exposure, inspect suppression or extraction, and verify respiratory-protection fit.",
     "preventive_measures": [
       "Use wet methods or local exhaust where suitable.",
       "Assess exposure and select respiratory protection through a fit and use programme.",
@@ -185,7 +195,7 @@
     "query": "heat stress temperature workload rest hydration",
     "severity": "Moderate",
     "action": "Move affected workers to a cooler recovery area, provide drinking water, and review work-rest arrangements if heat stress is suspected.",
-    "required_evidence": "Exposure and work-rest records",
+    "required_evidence": "Check measured heat conditions, workload, acclimatization, water, shade, rest schedule and worker symptoms.",
     "preventive_measures": [
       "Plan acclimatization, shade, hydration and work-rest arrangements for conditions and workload.",
       "Train supervisors and crews to recognize and respond to heat illness.",
@@ -197,7 +207,7 @@
     "query": "monsoon rain drainage water flooding slippery",
     "severity": "Moderate",
     "action": "Restrict access to flooded or slippery areas and isolate electrical hazards through an authorized person before re-entry.",
-    "required_evidence": "Weather, drainage and electrical isolation review",
+    "required_evidence": "Inspect standing water, drainage, slip surfaces, ground stability, exposed electrical equipment and isolation status.",
     "preventive_measures": [
       "Maintain drainage and monitor forecasts and water accumulation.",
       "Secure materials and inspect access routes during and after heavy rain.",
@@ -209,7 +219,7 @@
     "query": "worker access movement walkway stairs barriers",
     "severity": "High",
     "action": "Keep people away from the affected route or opening until a protected access route is provided.",
-    "required_evidence": "Site access and egress route review",
+    "required_evidence": "Inspect the complete access and egress route, edge and opening protection, lighting and temporary barriers.",
     "preventive_measures": [
       "Plan and mark safe access and egress routes.",
       "Protect edges and openings with secured barriers or covers.",
@@ -221,7 +231,7 @@
     "query": "signage language communication warning training",
     "severity": "Moderate",
     "action": "Pause the task if required warnings or instructions are not understood; brief the crew before restarting.",
-    "required_evidence": "Sign text and workforce language needs",
+    "required_evidence": "Check sign visibility, language and symbols, worker understanding, and whether the sign matches current site conditions.",
     "preventive_measures": [
       "Use clear signs and signals suited to workforce languages.",
       "Provide induction and task briefings with a check-back for understanding.",
@@ -233,7 +243,7 @@
     "query": "demolition debris stability sequence temporary support",
     "severity": "High",
     "action": "Keep people out of the demolition zone and stop work if stability or sequence is uncertain; obtain competent review.",
-    "required_evidence": "Demolition plan and structural review",
+    "required_evidence": "Review structural survey, demolition sequence, utility isolation, temporary supports, exclusion zone and competent supervision.",
     "preventive_measures": [
       "Use an engineered demolition sequence and pre-work structural survey.",
       "Identify and isolate utilities and install designed temporary supports.",

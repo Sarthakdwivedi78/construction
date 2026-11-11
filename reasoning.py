@@ -14,6 +14,44 @@ CUES = {
 }
 STATUSES = {"Violation", "No Violation", "Insufficient Evidence"}
 
+def _knowledge_assessment(cue, source, category_data, metadata, frame_sha):
+    def clean(value):
+        return " ".join(str(value or "").split()).rstrip(" .;:")
+    evidence = clean(category_data.get("required_evidence", "Confirm the task, worker exposure and controls at the site."))
+    for prefix in ("confirm ", "check ", "inspect ", "verify ", "review "):
+        if evidence.lower().startswith(prefix):
+            evidence = evidence[len(prefix):]
+            break
+    condition = clean(source.get("required_safety_condition", ""))
+    applicability = clean(source.get("applicability_conditions", ""))
+    for prefix in ("confirm ", "check ", "inspect ", "verify ", "review "):
+        if applicability.lower().startswith(prefix):
+            applicability = applicability[len(prefix):]
+            break
+    if not source:
+        return (f'The image suggests {cue["hazard"]}, but no current provision matched this category and jurisdiction. '
+                f'Check the site evidence: {evidence}')
+    regulation = source.get("indian_regulation", "the retrieved provision")
+    provision = source.get("provision_number", "")
+    ref = f' ({provision})' if provision else ""
+    if condition:
+        variants = [
+            f'For {metadata.get("activity") or "this task"}, the knowledge base matched {regulation}{ref}: {condition}. '
+            f'On-site checks needed: {evidence} Applicability to confirm: {applicability}',
+            f'The frame suggests {cue["hazard"]}. {regulation}{ref} covers: {condition}. '
+            f'Check {evidence} at the site. Confirm that the provision applies: {applicability}',
+            f'Screening note for {cue["hazard"]}: the retrieved provision {regulation}{ref} states: {condition}. '
+            f'To assess this finding, inspect {evidence}. Applicability to check: {applicability}',
+        ]
+        seed = f'{frame_sha or cue.get("evidence_box")}|{source.get("hazard_id", "")}|{cue["hazard"]}'
+        variant = int(hashlib.sha256(seed.encode("utf-8")).hexdigest()[:8], 16) % len(variants)
+        note = variants[variant]
+    else:
+        note = f'The knowledge base matched {regulation}{ref}. Check {evidence}. Confirm applicability: {applicability}.'
+    if "general duty" in source.get("violation_criteria", "").lower():
+        note += " This is general-duty context, not a specific technical pass/fail threshold."
+    return note
+
 class Vision:
     def __init__(self, model):
         from openai import OpenAI
@@ -69,7 +107,7 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
         sources = index.search(query, category, metadata.get("authority", "Unknown"), state=metadata.get("state", ""),
                                inspection_date=metadata.get("inspection_date", "")) if index else []
         decision = "Insufficient Evidence"
-        rationale = "The image shows a possible risk cue, but does not by itself confirm worker exposure, the controls in place, measurements, or which legal provision applies. Verify these on site."
+        rationale = ""
         suggested = None
         if vision:
             try:
@@ -97,6 +135,7 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
         frame_sha = hashlib.sha256(jpeg).hexdigest() if jpeg else None
         check = verified.get(chosen.get("hazard_id"), {})
         current = chosen.get("verification_status") in {"current_specific", "gazette_copy_reviewed"}
+        inspector_reviewed = False
         if (mode == "complete" and current and frame_sha and check.get("frame_sha256") == frame_sha
             and check.get("applicability_confirmed") is True and check.get("hazard") == cue["hazard"]
             and check.get("visual_evidence") == cue["visual_evidence"]
@@ -105,6 +144,20 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
             and isinstance(check.get("evidence"), str) and check["evidence"].strip()
             and check.get("status") in STATUSES):
             decision, rationale = check["status"], check["evidence"]
+            inspector_reviewed = True
+        elif suggested:
+            rationale = suggested["reasoning"]
+        else:
+            rationale = _knowledge_assessment(cue, chosen, taxonomy[category], metadata, frame_sha)
+        if inspector_reviewed:
+            assessment_display_status = decision
+            assessment_basis = "Inspector-reviewed evidence"
+        elif suggested:
+            assessment_display_status = f'AI suggestion: {suggested["status"]} · needs human review'
+            assessment_basis = f'Unreviewed vision model ({vision.model})'
+        else:
+            assessment_display_status = "Needs site verification"
+            assessment_basis = "Matched knowledge-base guidance; not a legal determination"
         findings.append({**{k:v for k,v in cue.items() if k != "query"},
                          "confidence": cue.get("confidence"), "severity": taxonomy[category]["severity"],
                          "danger_status": "Potential danger — high priority" if taxonomy[category]["severity"] == "High" else "Potential hazard — moderate priority",
@@ -120,7 +173,9 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
                          "source_verification_status": chosen.get("verification_status", ""),
                          "retrieved_evidence": chosen.get("required_safety_condition", ""),
                          "retrieved_sources": sources, "query": query, "violation_status": decision,
-                         "assessment_display_status": "Needs site verification" if decision == "Insufficient Evidence" else decision,
+                         "assessment_display_status": assessment_display_status,
+                         "assessment_basis": assessment_basis,
+                         "assessment_explanation": rationale,
                          "reasoning": rationale, "model_assessment": suggested,
                          "frame_sha256": frame_sha, "selected_provision_id": chosen.get("hazard_id"),
                          "decision_code": decision.upper().replace(" ", "_"),
