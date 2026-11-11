@@ -164,12 +164,21 @@ def report(metadata, frame_records, elapsed):
     critical = [h["hazard"] for h in hazards if h["severity"] == "High"]
     estimates = [h["visual_risk_estimate_percent"] for h in hazards
                  if isinstance(h.get("visual_risk_estimate_percent"), (int, float))]
+    if estimates:
+        estimate_status = "Highest YOLO confidence among mapped visual risk cues; this is not calibrated as incident probability."
+    elif hazards:
+        estimate_status = "A risk cue was raised without a YOLO confidence score, so a numeric visual score is unavailable."
+    else:
+        estimate_status = "No mapped visual risk cue was detected in the processed frames at the configured confidence threshold. This does not mean the site is safe."
+    from detection import DEFAULT_CONFIDENCE_THRESHOLD
     return {"inspection_id": str(uuid4()), "site_type": metadata.get("site_type", "Unspecified"),
             "site_context": {k:v for k,v in metadata.items() if k != "reviewed_checks"},
             "overall_risk_level": "High screening priority" if critical else
                                   "Review required" if hazards else "Undetermined",
             "visual_risk_estimate_percent": max(estimates) if estimates else None,
             "risk_probability_calibrated": False,
+            "risk_estimate_status": estimate_status,
+            "detection_confidence_threshold": DEFAULT_CONFIDENCE_THRESHOLD,
             "risk_probability_note": "The percentage is an uncalibrated model score for a visible cue, not the probability of an accident or proof of legal non-compliance.",
             "detected_objects": [dict(o, timestamp_seconds=f["timestamp_seconds"])
                                  for f in frame_records for o in f["objects"]],

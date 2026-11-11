@@ -3,6 +3,7 @@ from pathlib import Path
 LABELS = ("Hardhat", "Mask", "NO-Hardhat", "NO-Mask", "NO-Safety Vest", "Person",
           "Safety Cone", "Safety Vest", "machinery", "utility pole", "vehicle")
 INDIAN_PPE_LABELS = ("NOTSAFE", "NoHardhat", "NoJacket", "SAFE")
+DEFAULT_CONFIDENCE_THRESHOLD = 0.25
 
 def load_detector(path, expected_labels=LABELS):
     from ultralytics import YOLO
@@ -13,7 +14,7 @@ def load_detector(path, expected_labels=LABELS):
         raise ValueError("Checkpoint class mapping does not match the selected detector type.")
     return model
 
-def detect(model, frame, confidence=0.25):
+def detect(model, frame, confidence=DEFAULT_CONFIDENCE_THRESHOLD):
     result = model.predict(frame, conf=confidence, imgsz=640, verbose=False)[0]
     objects = [{"label": model.names[int(box.cls.item())],
                 "confidence": round(float(box.conf.item()), 4),

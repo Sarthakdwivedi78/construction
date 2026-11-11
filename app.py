@@ -334,6 +334,19 @@ if "result" in st.session_state:
         estimate = output.get("visual_risk_estimate_percent")
         st.metric("Highest visual risk-cue score", f"{estimate:.1f}%" if estimate is not None else "Not available")
         st.caption("This is an uncalibrated detector score for a visible cue, not the probability of an accident or a legal compliance decision. Confirm findings on site.")
+        if estimate is None:
+            st.info(output.get("risk_estimate_status", "No numeric score was available for this inspection."))
+        detections = output.get("detected_objects", [])
+        if detections:
+            detection_counts = {}
+            for detection in detections:
+                row = detection_counts.setdefault(detection["label"], {"Label": detection["label"], "Count": 0, "Highest confidence": 0.0})
+                row["Count"] += 1
+                row["Highest confidence"] = max(row["Highest confidence"], detection["confidence"])
+            with st.expander(f'Model detections ({len(detections)})'):
+                st.dataframe(list(detection_counts.values()), hide_index=True, use_container_width=True)
+        else:
+            st.caption(f'No detector boxes passed the {output.get("detection_confidence_threshold", 0.25):.0%} confidence threshold in the processed media.')
         for timestamp, preview in previews:
             with st.expander(f"Detections at {timestamp:.2f} s"):
                 st.image(preview)
