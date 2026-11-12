@@ -29,10 +29,14 @@ def pdf(report):
         heading = f'{i}. {hazard["hazard"]}'
         start = len(story)
         add(heading, "Heading2")
-        category = hazard.get("category") or hazard.get("risk_type", "Site safety")
+        category = hazard.get("model_category") or hazard.get("category") or hazard.get("risk_type", "Site safety")
         category_labels = {"ppe": "Personal protective equipment (PPE)", "height": "Work at height",
                            "scaffold": "Scaffolding", "confined": "Confined space",
-                           "operations": "Site operations"}
+                           "operations": "Site operations", "fall_hazard": "Fall hazard",
+                           "electrical_hazard": "Electrical hazard", "ppe_violation": "PPE violation",
+                           "equipment_hazard": "Equipment hazard", "structural_hazard": "Structural hazard",
+                           "cable_hazard": "Cable / trip hazard", "public_safety": "Public safety hazard",
+                           "environmental_hazard": "Environmental hazard"}
         category = category_labels.get(category, str(category).replace("_", " ").title())
         add(f'{hazard["timestamp_seconds"]:.2f} s | Potential risk category: {category} | {hazard["severity"]} priority | {hazard.get("assessment_display_status", hazard["violation_status"])}')
         if hazard.get("potential_harm"):

@@ -445,7 +445,7 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
         findings.append({**{k:v for k,v in cue.items() if k != "query"},
                          "confidence": cue.get("confidence"), "severity": taxonomy[category]["severity"],
                          "danger_status": "Potential danger — high priority" if taxonomy[category]["severity"] == "High" else "Potential hazard — moderate priority",
-                         "risk_type": cue.get("risk_type", category),
+                         "risk_type": cue.get("model_category") or cue.get("risk_type", category),
                          "visual_risk_estimate_percent": round(float(cue["confidence"]) * 100, 1)
                          if isinstance(cue.get("confidence"), (int, float)) else None,
                          "risk_probability_calibrated": False,

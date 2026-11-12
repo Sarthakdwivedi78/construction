@@ -68,6 +68,18 @@ def setting(name, default=""):
     return value or os.getenv(name, default)
 
 def category_label(item):
+    model_categories = {
+        "fall_hazard": "Fall hazard",
+        "electrical_hazard": "Electrical hazard",
+        "ppe_violation": "PPE violation",
+        "equipment_hazard": "Equipment hazard",
+        "structural_hazard": "Structural hazard",
+        "cable_hazard": "Cable / trip hazard",
+        "public_safety": "Public safety hazard",
+        "environmental_hazard": "Environmental hazard",
+    }
+    if item.get("model_category") in model_categories:
+        return model_categories[item["model_category"]]
     category = item.get("category") or item.get("risk_type") or "site safety"
     labels = {"ppe": "Personal protective equipment (PPE)", "height": "Work at height",
               "scaffold": "Scaffolding", "confined": "Confined space",
