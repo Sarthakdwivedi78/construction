@@ -57,6 +57,18 @@ PPE_CUE_GUIDANCE = {
     },
 }
 STATUSES = {"Violation", "No Violation", "Insufficient Evidence"}
+VISUAL_CATEGORY_GUIDE = {
+    "ppe": "A worker appears to lack task-relevant head, eye, hand, respiratory, foot, or high-visibility protection.",
+    "height": "A worker is near an elevated unprotected edge, roof edge, floor opening, or unsafe ladder/platform.",
+    "excavation": "An open excavation or trench shows exposed workers, unsupported sides, unsafe access, or an unprotected edge.",
+    "scaffold": "A scaffold or temporary work platform appears incomplete, unstable, or missing visible edge protection.",
+    "electrical": "Exposed or damaged electrical cables, unsafe temporary wiring, or electrical equipment near water is visible.",
+    "machinery": "A person appears exposed to moving plant, a vehicle route, an unguarded machine, or a suspended load.",
+    "fire": "Hot work, smoke, flame, nearby combustible materials, or visibly blocked emergency egress suggests a fire risk.",
+    "housekeeping": "Loose debris, spills, cluttered walkways, or unstable material stacks create a visible slip, trip, or falling-object risk.",
+    "confined": "A person appears to be entering or working in a tank, shaft, pit, or other confined space.",
+    "dust": "A visible dust or fume plume is present around workers or an active construction task.",
+}
 
 def cue_guidance(cue):
     label = cue.get("source_label", "")
@@ -165,9 +177,12 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
     relations = relationships(objects) if vision else []
     if vision:
         try:
-            category_guide = {key: value.get("query", "") for key, value in taxonomy.items()}
+            category_guide = {key: {"visual_cues": descriptor,
+                                    "site_checks": taxonomy[key].get("required_evidence", "")[:140]}
+                              for key, descriptor in VISUAL_CATEGORY_GUIDE.items() if key in taxonomy}
             proposed = vision.ask(
-                "Inspect every category in the supplied list and select up to three with clear visible evidence. "
+                "Inspect the image against every one of the ten supplied construction hazard categories. "
+                "Return every category with a clearly visible, specific potential-risk cue, up to ten. "
                 "Use only the exact supplied category names. Return an empty hazards array only when no risk cue "
                 "is visible. Describe what is visibly risky, not merely a normal site object. Keep each hazard and "
                 "evidence phrase short. Do not infer permits, measurements, hidden conditions, worker understanding, "
@@ -177,8 +192,8 @@ def inspect(objects, index, metadata, taxonomy, jpeg=None, vision=None, mode="co
                 {"detections": objects, "image_plane_relationships": relations, "site": site_context,
                  "categories": category_guide}, jpeg)
             seen_categories = set()
-            for row in proposed.get("hazards", [])[:3]:
-                if isinstance(row, dict) and row.get("category") in taxonomy and all(
+            for row in proposed.get("hazards", [])[:10]:
+                if isinstance(row, dict) and row.get("category") in category_guide and all(
                     isinstance(row.get(key), str) and row[key].strip()
                     for key in ("hazard", "visual_evidence")
                 ) and row["category"] not in seen_categories:

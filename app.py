@@ -306,12 +306,13 @@ with st.sidebar:
         vision_providers.append("OpenAI API")
     default_provider = ("OpenAI API" if vision_configured else
                         "Local Ollama" if local_vision_ready() else "Off")
-    provider = st.selectbox("21-category hazard screening", vision_providers,
+    provider = st.selectbox("10-category hazard screening", vision_providers,
                             index=vision_providers.index(default_provider),
                             key="hazard_screening_provider_21",
-                            help="The PPE YOLO model detects only its trained PPE labels. Enable a vision model to screen images against all 21 knowledge-base categories.")
+                            help="The vision model checks ten visual hazard categories and links findings to prevention guidance.")
+    st.caption("Visual categories: PPE · height · excavation · scaffolding · electrical · machinery · fire · housekeeping · confined space · dust/fumes")
     if provider == "OpenAI API":
-        st.caption(f"Zero-shot screening of all 21 categories with {vision_model_name}; this is not a 21-class trained YOLO model. Images and site context are sent to the configured API.")
+        st.caption(f"Zero-shot screening of ten visual hazard categories with {vision_model_name}; this is not a ten-class trained YOLO model. Images and site context are sent to the configured API.")
     elif provider == "Local Ollama":
         local_model_name = setting("SAFETY_LOCAL_VISION_MODEL", "moondream")
         st.caption(f"Experimental zero-shot screening with local Ollama ({local_model_name}); this is not a validated 21-class detector and may misclassify. For stronger hosted screening, configure the OpenAI API secrets.")
@@ -394,7 +395,7 @@ if "result" in st.session_state:
         else:
             st.subheader("No mapped risk cue detected")
             if not output.get("vision_enabled"):
-                st.warning("No potential risk category was returned because 21-category vision screening was off. Select Local Ollama or configure the OpenAI vision provider, then rerun the inspection.")
+                st.warning("No potential risk category was returned because ten-category vision screening was off. Select Local Ollama or configure the OpenAI vision provider, then rerun the inspection.")
             elif output.get("warnings"):
                 st.error("The vision model could not complete the category screen: " + "; ".join(output["warnings"]))
             else:

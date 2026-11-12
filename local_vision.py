@@ -46,7 +46,7 @@ class LocalVision:
                 "visual_evidence": {"type": "string"},
             }
             schema = {"type": "object", "required": ["hazards"], "properties": {
-                "hazards": {"type": "array", "maxItems": 3, "items": {
+                "hazards": {"type": "array", "maxItems": 10, "items": {
                     "type": "object", "properties": fields, "required": list(fields),
                     "additionalProperties": False}}}, "additionalProperties": False}
         elif "cue" in data:
@@ -63,7 +63,7 @@ class LocalVision:
             "options": {"temperature": 0,
                         "num_ctx": 2048 if "categories" in data else 4096,
                         "num_batch": 16,
-                        "num_predict": 192 if "categories" in data else 256},
+                        "num_predict": 384 if "categories" in data else 256},
         }
         request = Request(self.url, json.dumps(payload).encode("utf-8"),
                           {"Content-Type": "application/json"})
