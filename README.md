@@ -28,6 +28,8 @@ The Pixtral weights are approximately 25.4 GB. The model card's sample serving s
 vllm serve a1273352/pixtral-12b-construction-safety --tensor-parallel-size 2 --max-model-len 8192 --port 8200
 ```
 
+For an authenticated Docker server with public HTTPS-ingress and matching Streamlit secrets, see [`deploy/pixtral/README.md`](deploy/pixtral/README.md).
+
 Set `PIXTRAL_API_BASE`, `PIXTRAL_API_KEY` (if the endpoint requires one), and `PIXTRAL_MODEL` in `.streamlit/secrets.toml` locally or the Streamlit deployment secrets. Copy `.streamlit/secrets.toml.example` as a template. Uploaded images and sampled video frames are sent to the configured Pixtral endpoint. Do not put endpoint secrets in Git. The model card reports 92% violation accuracy and 79% violation recall on only 50 hardhat test images; it does not establish category-by-category accuracy for the broader hazard groups. The model card also describes its generated boxes as approximate. Evaluate it on a separate, human-reviewed Indian construction dataset before operational use.
 
 When configured, the optional OpenAI API uses `gpt-4o-mini` by default to write a short text-only comment on returned findings. It receives category names and matched prevention guidance, not uploaded images. It cannot create detections or establish legal compliance. API usage is billed separately from ChatGPT subscriptions.
