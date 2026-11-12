@@ -14,8 +14,8 @@ def load_detector(path, expected_labels=LABELS):
         raise ValueError("Checkpoint class mapping does not match the selected detector type.")
     return model
 
-def detect(model, frame, confidence=DEFAULT_CONFIDENCE_THRESHOLD):
-    result = model.predict(frame, conf=confidence, imgsz=640, verbose=False)[0]
+def detect(model, frame, confidence=DEFAULT_CONFIDENCE_THRESHOLD, imgsz=640):
+    result = model.predict(frame, conf=confidence, imgsz=imgsz, device="cpu", verbose=False)[0]
     objects = [{"label": model.names[int(box.cls.item())],
                 "confidence": round(float(box.conf.item()), 4),
                 "xyxy": [round(value, 2) for value in box.xyxy[0].tolist()]} for box in result.boxes]

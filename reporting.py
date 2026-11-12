@@ -38,6 +38,8 @@ def pdf(report):
         if hazard.get("potential_harm"):
             add("Potential harm: " + hazard["potential_harm"])
         add("Observation: " + hazard["visual_evidence"])
+        if hazard.get("ai_comment"):
+            add("OpenAI comment (advisory): " + hazard["ai_comment"])
         add("Review: " + hazard["reasoning"])
         if hazard["source_url"]:
             add(hazard["indian_regulation"] + " | " + hazard["provision_reference"])

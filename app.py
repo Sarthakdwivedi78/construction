@@ -5,14 +5,12 @@ import os
 import tempfile
 from pathlib import Path
 from time import perf_counter
-from urllib.request import urlopen
 
 import cv2
 import streamlit as st
 from detection import INDIAN_PPE_LABELS, detect, frames, load_detector
 from measurements import parse_measurements
-from reasoning import Vision, explain_finding, inspect, report
-from local_vision import LocalVision
+from reasoning import OpenAICommentary, PixtralHazardVision, explain_finding, inspect, report
 from reporting import pdf
 from retrieval import Index, ROOT
 
@@ -38,6 +36,30 @@ def assessment_label(item):
         return "Needs site verification"
     return item.get("violation_status", "Needs site verification")
 
+class DemoMedia:
+    def __init__(self, path, category):
+        self.name = f"DEMO_{category}.png"
+        self._content = path.read_bytes()
+
+    def getbuffer(self):
+        return memoryview(self._content)
+
+def annotate_hazards(image, hazards):
+    for item in hazards:
+        box = item.get("evidence_box")
+        if not isinstance(box, list) or len(box) != 4:
+            continue
+        x1, y1, x2, y2 = [int(value) for value in box]
+        color = (30, 110, 235) if item.get("observation_origin") == "pixtral_vision" else (20, 180, 230)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+        label = item.get("model_category") or item.get("hazard", "risk")
+        score = item.get("confidence")
+        if isinstance(score, (int, float)):
+            label = f"{label} {float(score):.2f}*"
+        cv2.putText(image, label[:80], (max(0, x1), max(18, y1 - 6)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.52, color, 2, cv2.LINE_AA)
+    return image
+
 def setting(name, default=""):
     try:
         value = st.secrets.get(name, "")
@@ -51,17 +73,6 @@ def category_label(item):
               "scaffold": "Scaffolding", "confined": "Confined space",
               "operations": "Site operations"}
     return labels.get(category, str(category).replace("_", " ").title())
-
-@st.cache_data(ttl=30)
-def local_vision_ready():
-    model_name = os.getenv("SAFETY_LOCAL_VISION_MODEL", "moondream")
-    port = os.getenv("SAFETY_OLLAMA_PORT", "11434")
-    try:
-        with urlopen(f"http://127.0.0.1:{port}/api/tags", timeout=0.5) as response:
-            models = json.load(response).get("models", [])
-        return any(row.get("name") == model_name for row in models)
-    except Exception:
-        return False
 
 @st.cache_resource
 def detector(model_choice):
@@ -88,7 +99,7 @@ def index(hybrid):
 
 st.set_page_config(page_title="Construction Safety Inspection", layout="wide")
 st.title("Indian Construction Site Safety Inspection")
-st.caption("Indian PPE screening with retrieval from the current Indian safety corpus. Every finding needs human review.")
+st.caption("Broad construction-hazard screening with Pixtral 12B when connected, YOLO PPE/object cues, and retrieval from the Indian safety corpus. Every finding needs human review.")
 page = st.sidebar.radio("Workspace", ["Home", "Live Inspection", "Image Inspection", "Video Inspection",
                        "Regulatory Knowledge Base", "Retrieval Testing", "Model Evaluation",
                        "Training Dashboard", "Inspection History"])
@@ -299,36 +310,78 @@ with st.sidebar:
     hybrid = st.checkbox("Enable BGE and FAISS", disabled=not dense_available,
                          help="Dense retrieval requires the optional hybrid dependencies.")
     api_key = setting("OPENAI_API_KEY")
-    vision_model_name = setting("SAFETY_VISION_MODEL")
-    vision_configured = bool(api_key and vision_model_name)
-    vision_providers = ["Off", "Local Ollama"]
-    if vision_configured:
-        vision_providers.append("OpenAI API")
-    default_provider = ("OpenAI API" if vision_configured else
-                        "Local Ollama" if local_vision_ready() else "Off")
-    provider = st.selectbox("10-category hazard screening", vision_providers,
-                            index=vision_providers.index(default_provider),
-                            key="hazard_screening_provider_21",
-                            help="The vision model checks ten visual hazard categories and links findings to prevention guidance.")
-    st.caption("Visual categories: PPE · height · excavation · scaffolding · electrical · machinery · fire · housekeeping · confined space · dust/fumes")
-    if provider == "OpenAI API":
-        st.caption(f"Zero-shot screening of ten visual hazard categories with {vision_model_name}; this is not a ten-class trained YOLO model. Images and site context are sent to the configured API.")
-    elif provider == "Local Ollama":
-        local_model_name = setting("SAFETY_LOCAL_VISION_MODEL", "moondream")
-        st.caption(f"Experimental zero-shot screening with local Ollama ({local_model_name}); this is not a validated 21-class detector and may misclassify. For stronger hosted screening, configure the OpenAI API secrets.")
+    comment_model_name = setting("SAFETY_COMMENT_MODEL", "gpt-4o-mini")
+    comment_options = ["Off", "OpenAI API"] if api_key else ["Off"]
+    provider = st.selectbox("GPT comments on model findings", comment_options,
+                            index=1 if api_key else 0,
+                            key="ai_commentary_provider",
+                            help="OpenAI writes a short text advisory for findings already returned by a vision model. It does not add detections.")
+    pixtral_base_url = setting("PIXTRAL_API_BASE").strip()
+    pixtral_api_key = setting("PIXTRAL_API_KEY", "not-needed")
+    pixtral_model_name = setting("PIXTRAL_MODEL", "a1273352/pixtral-12b-construction-safety")
+    if pixtral_base_url:
+        st.info(f"Pixtral endpoint configured · {pixtral_model_name}")
+        st.caption("The endpoint is checked only when you run an inspection or press the test button. Uploaded images/video frames are sent to this endpoint. YOLO remains an additional PPE/object detector.")
+        if st.button("Test Pixtral endpoint", key="test_pixtral_endpoint"):
+            try:
+                available_models = PixtralHazardVision(
+                    pixtral_base_url, pixtral_api_key, pixtral_model_name
+                ).test_endpoint()
+                if pixtral_model_name in available_models:
+                    st.success(f"Endpoint reachable; configured model is served: {pixtral_model_name}")
+                else:
+                    st.warning("Endpoint reachable, but the configured model ID was not listed. Served IDs: "
+                               + (", ".join(available_models) or "none"))
+            except Exception as exc:
+                st.error(f"Pixtral endpoint test failed ({type(exc).__name__}): "
+                         + (" ".join(str(exc).split())[:240] or "No additional details."))
     else:
-        st.caption("Category-wide vision screening is off. YOLO reports only its trained PPE classes.")
+        st.warning("Pixtral is not configured. Inspections will use YOLO-only mode until PIXTRAL_API_BASE points to a reachable Pixtral vLLM endpoint.")
+        st.caption("For a Streamlit Cloud deployment, the Pixtral server must be publicly reachable from the Streamlit app. localhost on your computer will not work from Streamlit Cloud.")
+    st.caption("OpenAI comments receive detected category names and prevention text only; uploaded images are not sent to OpenAI. The Indian YOLO fine-tune detects four PPE classes: NOTSAFE, NoHardhat, NoJacket, SAFE.")
+    if provider == "OpenAI API":
+        st.caption(f"Comment model: {comment_model_name}. Comments are advisory; the knowledge base supplies prevention measures and a site professional must verify findings.")
+    else:
+        st.info("To enable GPT comments, set OPENAI_API_KEY in .streamlit/secrets.toml or as an environment variable. API usage is billed separately from ChatGPT.")
     interval = st.number_input("Video sampling interval in seconds", 1, 60, 2)
     limit = st.number_input("Maximum video frames", 1, 60, 12)
+if page == "Image Inspection":
+    demo_manifest_path = ROOT / "demo_samples" / "manifest.json"
+    demo_manifest = json.loads(demo_manifest_path.read_text(encoding="utf-8")) if demo_manifest_path.is_file() else []
+    if demo_manifest:
+        with st.expander(f"Try {len(demo_manifest)} built-in hazard examples", expanded=True):
+            demo_by_name = {row["category"]: row for row in demo_manifest}
+            selected_demo_names = st.multiselect(
+                "Select demo scenes to run",
+                list(demo_by_name),
+                help="Choose one scene or a small batch. Each selected scene gets its own result and report.")
+            preview_index = list(demo_by_name).index(selected_demo_names[0]) if selected_demo_names else 0
+            preview_name = st.selectbox("Preview a sample scene", list(demo_by_name), index=preview_index)
+            preview_row = demo_by_name[preview_name]
+            preview_path = ROOT / "demo_samples" / preview_row["filename"]
+            st.image(preview_path.read_bytes(), caption=f'{preview_name} · synthetic demo scene')
+            st.caption("These generated examples are for app practice, not labeled test data or accuracy evaluation.")
+            if selected_demo_names:
+                if pixtral_base_url:
+                    st.caption("Pixtral analyzes the selected image for its eight broad hazard categories. Synthetic examples are practice inputs, not accuracy test data.")
+                else:
+                    st.caption("Without a configured Pixtral endpoint, selecting a demo scene does not add that hazard category to the YOLO detector.")
+                include_uploads = st.checkbox("Include images from the uploader in this run", value=False)
+                demo_media = [DemoMedia(ROOT / "demo_samples" / demo_by_name[name]["filename"],
+                                        name.replace(" ", "_"))
+                              for name in selected_demo_names]
+                media_items = demo_media + (list(media_items) if include_uploads else [])
 if st.button("Run inspection", disabled=not media_items):
     st.session_state.pop("result", None)
     try:
-        model = detector(model_choice)
-        kb = index(hybrid)
-        if provider == "OpenAI API" and not vision_model_name:
-            raise ValueError("Set SAFETY_VISION_MODEL to a vision-capable Responses API model.")
-        vision = (Vision(vision_model_name, api_key=api_key) if provider == "OpenAI API" else
-                  LocalVision() if provider == "Local Ollama" else None)
+        with st.spinner("Loading the detector and safety knowledge base (first run can take a few seconds)…"):
+            model = detector(model_choice)
+            kb = index(hybrid)
+        inference_imgsz = 320 if model_choice == "Indian PPE fine-tune (4 classes)" else 640
+        hazard_vision = (PixtralHazardVision(pixtral_base_url, pixtral_api_key, pixtral_model_name)
+                         if pixtral_base_url else None)
+        advisor = (OpenAICommentary(comment_model_name, api_key=api_key)
+                   if provider == "OpenAI API" else None)
         taxonomy = json.loads((ROOT / "taxonomy.json").read_text(encoding="utf-8-sig"))
         meta = {"site_type": site, "activity": activity, "state": state,
                 "authority": authority, "inspection_date": date.isoformat()}
@@ -349,11 +402,14 @@ if st.button("Run inspection", disabled=not media_items):
                 target.write_bytes(media.getbuffer())
                 with st.spinner(f"Inspecting {media.name} ({media_index + 1}/{len(media_items)})"):
                     for timestamp, frame in frames(target, suffix in {".mp4", ".mov", ".avi"}, interval, limit):
-                        objects, annotated = detect(model, frame)
+                        objects, annotated = detect(model, frame, imgsz=inference_imgsz)
                         ok, original = cv2.imencode(".jpg", frame)
                         if not ok:
                             raise ValueError("Could not encode frame.")
-                        hazards, warnings = inspect(objects, kb, meta, taxonomy, original.tobytes(), vision)
+                        hazards, warnings = inspect(objects, kb, meta, taxonomy,
+                                                    original.tobytes(), vision=hazard_vision,
+                                                    commentary=advisor)
+                        annotated = annotate_hazards(annotated, hazards)
                         records.append(dict(timestamp_seconds=timestamp, objects=objects,
                                             hazards=hazards, warnings=warnings))
                         ok, preview = cv2.imencode(".jpg", annotated)
@@ -362,9 +418,12 @@ if st.button("Run inspection", disabled=not media_items):
             output = report(meta, records, perf_counter() - start)
             output["source_media"] = media.name
             output["retrieval_mode"] = "BM25 + BGE" if hybrid else "BM25"
-            output["vision_enabled"] = vision is not None
-            output["vision_provider"] = provider
-            output["vision_model"] = vision.model if vision else None
+            output["ai_commentary_enabled"] = advisor is not None
+            output["ai_commentary_provider"] = "OpenAI API" if advisor else "Off"
+            output["ai_commentary_model"] = advisor.model if advisor else None
+            output["hazard_vision_provider"] = "Pixtral 12B" if hazard_vision else "Off"
+            output["hazard_vision_model"] = hazard_vision.model if hazard_vision else None
+            output["inference_imgsz"] = inference_imgsz
             from datetime import datetime, timezone
             output["created_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
             completed.append((output, previews, media.name))
@@ -374,8 +433,7 @@ if st.button("Run inspection", disabled=not media_items):
         st.session_state["result"] = completed
     except Exception as exc:
         st.error(f"Inspection could not run ({type(exc).__name__}). Check model, dependencies and media.")
-        if isinstance(exc, (FileNotFoundError, ValueError)):
-            st.caption(str(exc))
+        st.caption(str(exc) or "No additional error details were provided.")
 if "result" in st.session_state:
     results = st.session_state["result"]
     if len(results) > 1:
@@ -388,19 +446,21 @@ if "result" in st.session_state:
     for result_index, (output, previews, media_name) in enumerate(results):
         st.markdown(f"#### {media_name}")
         hazards = output.get("identified_hazards", [])
+        detections = output.get("detected_objects", [])
         if hazards:
             high_count = sum(item.get("severity") == "High" for item in hazards)
             st.subheader(f"Potential danger detected · {high_count} high-priority risk(s)")
             st.caption("Screening result only. Confirm each observation at the site before taking action.")
         else:
             st.subheader("No mapped risk cue detected")
-            if not output.get("vision_enabled"):
-                st.warning("No potential risk category was returned because ten-category vision screening was off. Select Local Ollama or configure the OpenAI vision provider, then rerun the inspection.")
-            elif output.get("warnings"):
-                st.error("The vision model could not complete the category screen: " + "; ".join(output["warnings"]))
+            if output.get("hazard_vision_provider") == "Pixtral 12B":
+                st.info("Pixtral returned no supported visible hazard cue for the processed frames. This is not evidence that the site is safe; review the scene and the model’s category limits.")
+            elif not detections:
+                st.info("YOLO found no mapped PPE risk cue from its four trained classes. This does not show that the site is safe, and this detector does not recognize the other demo hazard categories.")
             else:
-                st.info("The vision model returned no visible risk category for this image. This does not mean the site is safe; some hazards require records, measurements or on-site checks.")
-        detections = output.get("detected_objects", [])
+                st.info("No mapped PPE risk cue was produced from these detections. Confirm conditions at the site; this does not establish that it is safe.")
+        if output.get("warnings"):
+            st.warning("Some advisory processing was unavailable: " + "; ".join(output["warnings"]))
         if detections:
             detection_counts = {}
             for detection in detections:
@@ -410,10 +470,12 @@ if "result" in st.session_state:
             with st.expander(f'Model detections ({len(detections)})'):
                 st.dataframe(list(detection_counts.values()), hide_index=True, use_container_width=True)
         else:
-            st.caption(f'No detector boxes passed the {output.get("detection_confidence_threshold", 0.25):.0%} confidence threshold in the processed media.')
+            st.caption(f'No YOLO object boxes passed the {output.get("detection_confidence_threshold", 0.25):.0%} confidence threshold in the processed media.')
         for timestamp, preview in previews:
             with st.expander(f"Detections at {timestamp:.2f} s"):
                 st.image(preview)
+                if output.get("hazard_vision_provider") == "Pixtral 12B":
+                    st.caption("Pixtral localization boxes are approximate visual cues. Review the original frame before acting.")
         for item in hazards:
             st.markdown(f'### {item["hazard"]}')
             danger_label = "POTENTIAL DANGER — HIGH PRIORITY" if item.get("severity") == "High" else "CAUTION — MODERATE PRIORITY"
@@ -425,8 +487,11 @@ if "result" in st.session_state:
             st.markdown(f'**Possible harm:** {item.get("potential_harm", "Confirm the possible consequence with a competent site supervisor.")}')
             cue_score = item.get("visual_risk_estimate_percent")
             if cue_score is not None:
-                st.caption(f'YOLO visual cue confidence: {cue_score:.1f}% (not an accident probability).')
+                label = "Pixtral model score" if item.get("observation_origin") == "pixtral_vision" else "YOLO visual cue confidence"
+                st.caption(f'{label}: {cue_score:.1f}% (not an accident probability or calibrated hazard probability).')
             st.markdown(f'**What the model saw:** {item["visual_evidence"]}')
+            if item.get("ai_comment"):
+                st.markdown("**OpenAI comment (advisory):** " + item["ai_comment"])
             st.markdown(f'**Assessment:** {assessment_label(item)}')
             st.caption(f'Why ({item.get("assessment_basis", "knowledge-base review")}): {assessment_detail(item)}')
             st.markdown(f'**Immediate action:** {item["corrective_action"]}')
