@@ -2,6 +2,7 @@
 import base64
 import json
 import os
+from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, ProxyHandler, build_opener
 
 class NoRedirect(HTTPRedirectHandler):
@@ -10,7 +11,8 @@ class NoRedirect(HTTPRedirectHandler):
 
 class LocalVision:
     def __init__(self, model=None):
-        self.model = model or os.environ.get("SAFETY_LOCAL_VISION_MODEL", "qwen2.5vl:3b")
+        self.model = model or os.environ.get("SAFETY_LOCAL_VISION_MODEL", "moondream")
+        self.category_only = True
         if self.model.lower().endswith((":cloud", "-cloud")):
             raise ValueError("Configure an installed local vision model.")
         port = int(os.environ.get("SAFETY_OLLAMA_PORT", "11434"))
@@ -22,11 +24,29 @@ class LocalVision:
     def ask(self, instructions, data, jpeg):
         if not jpeg:
             raise ValueError("Vision assessment requires image bytes.")
+        if "categories" in data:
+            try:
+                import cv2
+                import numpy as np
+                frame = cv2.imdecode(np.frombuffer(jpeg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                if frame is not None and max(frame.shape[:2]) > 768:
+                    scale = 768 / max(frame.shape[:2])
+                    frame = cv2.resize(frame, (round(frame.shape[1] * scale), round(frame.shape[0] * scale)),
+                                       interpolation=cv2.INTER_AREA)
+                    ok, encoded = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
+                    if ok:
+                        jpeg = encoded.tobytes()
+            except ImportError:
+                pass
         schema = "json"
         if "categories" in data:
-            fields = {key: {"type": "string"} for key in ("category", "hazard", "visual_evidence", "query")}
+            fields = {
+                "category": {"type": "string", "enum": list(data["categories"])},
+                "hazard": {"type": "string"},
+                "visual_evidence": {"type": "string"},
+            }
             schema = {"type": "object", "required": ["hazards"], "properties": {
-                "hazards": {"type": "array", "maxItems": 6, "items": {
+                "hazards": {"type": "array", "maxItems": 3, "items": {
                     "type": "object", "properties": fields, "required": list(fields),
                     "additionalProperties": False}}}, "additionalProperties": False}
         elif "cue" in data:
@@ -40,12 +60,19 @@ class LocalVision:
             "messages": [{"role": "system", "content": instructions},
                          {"role": "user", "content": json.dumps(data),
                           "images": [base64.b64encode(jpeg).decode("ascii")]}],
-            "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 512},
+            "options": {"temperature": 0,
+                        "num_ctx": 2048 if "categories" in data else 4096,
+                        "num_batch": 16,
+                        "num_predict": 192 if "categories" in data else 256},
         }
         request = Request(self.url, json.dumps(payload).encode("utf-8"),
                           {"Content-Type": "application/json"})
-        with self.opener.open(request, timeout=180) as response:
-            result = json.load(response)
+        try:
+            with self.opener.open(request, timeout=180) as response:
+                result = json.load(response)
+        except HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"Ollama returned HTTP {exc.code}: {detail[:300]}") from exc
         answer = json.loads(result["message"]["content"])
         if not isinstance(answer, dict):
             raise ValueError("Expected a JSON object.")

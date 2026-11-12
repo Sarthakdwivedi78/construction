@@ -5,12 +5,14 @@ import os
 import tempfile
 from pathlib import Path
 from time import perf_counter
+from urllib.request import urlopen
 
 import cv2
 import streamlit as st
 from detection import INDIAN_PPE_LABELS, detect, frames, load_detector
 from measurements import parse_measurements
 from reasoning import Vision, explain_finding, inspect, report
+from local_vision import LocalVision
 from reporting import pdf
 from retrieval import Index, ROOT
 
@@ -35,6 +37,31 @@ def assessment_label(item):
     if item.get("violation_status") == "Insufficient Evidence":
         return "Needs site verification"
     return item.get("violation_status", "Needs site verification")
+
+def setting(name, default=""):
+    try:
+        value = st.secrets.get(name, "")
+    except Exception:
+        value = ""
+    return value or os.getenv(name, default)
+
+def category_label(item):
+    category = item.get("category") or item.get("risk_type") or "site safety"
+    labels = {"ppe": "Personal protective equipment (PPE)", "height": "Work at height",
+              "scaffold": "Scaffolding", "confined": "Confined space",
+              "operations": "Site operations"}
+    return labels.get(category, str(category).replace("_", " ").title())
+
+@st.cache_data(ttl=30)
+def local_vision_ready():
+    model_name = os.getenv("SAFETY_LOCAL_VISION_MODEL", "moondream")
+    port = os.getenv("SAFETY_OLLAMA_PORT", "11434")
+    try:
+        with urlopen(f"http://127.0.0.1:{port}/api/tags", timeout=0.5) as response:
+            models = json.load(response).get("models", [])
+        return any(row.get("name") == model_name for row in models)
+    except Exception:
+        return False
 
 @st.cache_resource
 def detector(model_choice):
@@ -271,12 +298,25 @@ with st.sidebar:
     dense_available = all(importlib.util.find_spec(name) for name in ("faiss", "sentence_transformers"))
     hybrid = st.checkbox("Enable BGE and FAISS", disabled=not dense_available,
                          help="Dense retrieval requires the optional hybrid dependencies.")
-    vision_configured = bool(os.getenv("OPENAI_API_KEY") and os.getenv("SAFETY_VISION_MODEL"))
-    provider = st.selectbox("Vision provider", ["Off", "OpenAI API"] if vision_configured else ["Off"])
+    api_key = setting("OPENAI_API_KEY")
+    vision_model_name = setting("SAFETY_VISION_MODEL")
+    vision_configured = bool(api_key and vision_model_name)
+    vision_providers = ["Off", "Local Ollama"]
+    if vision_configured:
+        vision_providers.append("OpenAI API")
+    default_provider = ("Local Ollama" if local_vision_ready() else
+                        "OpenAI API" if vision_configured else "Off")
+    provider = st.selectbox("21-category hazard screening", vision_providers,
+                            index=vision_providers.index(default_provider),
+                            key="hazard_screening_provider_21",
+                            help="The PPE YOLO model detects only its trained PPE labels. Enable a vision model to screen images against all 21 knowledge-base categories.")
     if provider == "OpenAI API":
-        st.caption("Sends sampled images and site context to the configured API.")
+        st.caption(f"Zero-shot screening of all 21 categories with {vision_model_name}; this is not a 21-class trained YOLO model. Images and site context are sent to the configured API.")
+    elif provider == "Local Ollama":
+        local_model_name = os.getenv("SAFETY_LOCAL_VISION_MODEL", "moondream")
+        st.caption(f"Zero-shot screening of all 21 categories with local Ollama ({local_model_name}); this is not a 21-class trained YOLO model. Start Ollama and install this vision model first. Results need site review.")
     else:
-        st.caption("Visual reasoning is off. YOLO screening only reports its trained PPE classes; it does not assess every site hazard.")
+        st.caption("Category-wide vision screening is off. YOLO reports only its trained PPE classes.")
     interval = st.number_input("Video sampling interval in seconds", 1, 60, 2)
     limit = st.number_input("Maximum video frames", 1, 60, 12)
 if st.button("Run inspection", disabled=not media_items):
@@ -284,9 +324,10 @@ if st.button("Run inspection", disabled=not media_items):
     try:
         model = detector(model_choice)
         kb = index(hybrid)
-        if provider == "OpenAI API" and not os.getenv("SAFETY_VISION_MODEL"):
+        if provider == "OpenAI API" and not vision_model_name:
             raise ValueError("Set SAFETY_VISION_MODEL to a vision-capable Responses API model.")
-        vision = Vision(os.environ["SAFETY_VISION_MODEL"]) if provider == "OpenAI API" else None
+        vision = (Vision(vision_model_name, api_key=api_key) if provider == "OpenAI API" else
+                  LocalVision() if provider == "Local Ollama" else None)
         taxonomy = json.loads((ROOT / "taxonomy.json").read_text(encoding="utf-8-sig"))
         meta = {"site_type": site, "activity": activity, "state": state,
                 "authority": authority, "inspection_date": date.isoformat()}
@@ -352,7 +393,12 @@ if "result" in st.session_state:
             st.caption("Screening result only. Confirm each observation at the site before taking action.")
         else:
             st.subheader("No mapped risk cue detected")
-            st.info("This does not mean the site is safe. The selected YOLO model screens its trained PPE classes only; hazards outside those classes may not be detected.")
+            if not output.get("vision_enabled"):
+                st.warning("No potential risk category was returned because 21-category vision screening was off. Select Local Ollama or configure the OpenAI vision provider, then rerun the inspection.")
+            elif output.get("warnings"):
+                st.error("The vision model could not complete the category screen: " + "; ".join(output["warnings"]))
+            else:
+                st.info("The vision model returned no visible risk category for this image. This does not mean the site is safe; some hazards require records, measurements or on-site checks.")
         detections = output.get("detected_objects", [])
         if detections:
             detection_counts = {}
@@ -374,7 +420,7 @@ if "result" in st.session_state:
                 st.error(danger_label)
             else:
                 st.warning(danger_label)
-            st.markdown(f'**Risk type:** {item.get("risk_type", "Site safety").title()}')
+            st.markdown(f'**Potential risk category:** {category_label(item)}')
             st.markdown(f'**Possible harm:** {item.get("potential_harm", "Confirm the possible consequence with a competent site supervisor.")}')
             cue_score = item.get("visual_risk_estimate_percent")
             if cue_score is not None:
