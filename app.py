@@ -304,8 +304,8 @@ with st.sidebar:
     vision_providers = ["Off", "Local Ollama"]
     if vision_configured:
         vision_providers.append("OpenAI API")
-    default_provider = ("Local Ollama" if local_vision_ready() else
-                        "OpenAI API" if vision_configured else "Off")
+    default_provider = ("OpenAI API" if vision_configured else
+                        "Local Ollama" if local_vision_ready() else "Off")
     provider = st.selectbox("21-category hazard screening", vision_providers,
                             index=vision_providers.index(default_provider),
                             key="hazard_screening_provider_21",
@@ -313,8 +313,8 @@ with st.sidebar:
     if provider == "OpenAI API":
         st.caption(f"Zero-shot screening of all 21 categories with {vision_model_name}; this is not a 21-class trained YOLO model. Images and site context are sent to the configured API.")
     elif provider == "Local Ollama":
-        local_model_name = os.getenv("SAFETY_LOCAL_VISION_MODEL", "moondream")
-        st.caption(f"Zero-shot screening of all 21 categories with local Ollama ({local_model_name}); this is not a 21-class trained YOLO model. Start Ollama and install this vision model first. Results need site review.")
+        local_model_name = setting("SAFETY_LOCAL_VISION_MODEL", "moondream")
+        st.caption(f"Experimental zero-shot screening with local Ollama ({local_model_name}); this is not a validated 21-class detector and may misclassify. For stronger hosted screening, configure the OpenAI API secrets.")
     else:
         st.caption("Category-wide vision screening is off. YOLO reports only its trained PPE classes.")
     interval = st.number_input("Video sampling interval in seconds", 1, 60, 2)
