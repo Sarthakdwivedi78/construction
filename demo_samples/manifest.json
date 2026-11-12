@@ -1,0 +1,12 @@
+[
+  {"category": "PPE", "filename": "ppe.png", "hazard_category": "ppe", "description": "Worker without visible hardhat and high-visibility clothing."},
+  {"category": "Work at height", "filename": "height.png", "hazard_category": "height", "description": "Worker near an unprotected slab edge."},
+  {"category": "Excavation", "filename": "excavation.png", "hazard_category": "excavation", "description": "Worker near an unprotected trench edge."},
+  {"category": "Scaffolding", "filename": "scaffolding.png", "hazard_category": "scaffold", "description": "Incomplete scaffold platform with a missing guardrail."},
+  {"category": "Electrical", "filename": "electrical.png", "hazard_category": "electrical", "description": "Damaged temporary cable near a wet work area."},
+  {"category": "Machinery / vehicle movement", "filename": "machinery.png", "hazard_category": "machinery", "description": "Pedestrian close to moving construction plant without separation."},
+  {"category": "Fire / hot work", "filename": "fire.png", "hazard_category": "fire", "description": "Hot work near combustible materials."},
+  {"category": "Housekeeping / trip", "filename": "housekeeping.png", "hazard_category": "housekeeping", "description": "Cluttered walkway with rubble and cables."},
+  {"category": "Confined space", "filename": "confined_space.png", "hazard_category": "confined", "description": "Worker preparing to enter a utility pit without visible entry controls."},
+  {"category": "Dust and fumes", "filename": "dust_fumes.png", "hazard_category": "dust", "description": "Concrete cutting creates visible dust around a worker."}
+]
